@@ -37,7 +37,7 @@ export default function LoginPage() {
     setTimeout(() => {
       setIsLoading(false);
       if (username === 'test' && password === 'password') {
-        alert('Đăng nhập thành công (UI Demo)!');
+        alert('Đăng nhập thành công!');
         // Ở đây trong thực tế sẽ chuyển hướng hoặc lưu session
       } else {
         setError('Tên đăng nhập hoặc mật khẩu không đúng (UI Demo).');
@@ -59,7 +59,7 @@ export default function LoginPage() {
             <LockClosedIcon className="h-10 w-10 text-indigo-600" />
           </div>
         </div>
-        <h2 className="mb-8 text-center text-4xl font-extrabold text-gray-900">
+        <h2 className="mb-8 text-center text-4xl font-extrabold text-gray-900 font-sans">
           Chào mừng trở lại!
         </h2>
 

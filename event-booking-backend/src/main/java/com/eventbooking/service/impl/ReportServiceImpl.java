@@ -113,7 +113,6 @@ public class ReportServiceImpl implements ReportService {
                 Booking::getEvent,
                 Collectors.counting()
             ));
-        
         List<EventReportDTO> eventReports = popularityByEvent.entrySet().stream()
             .map(entry -> {
                 EventReportDTO eventReport = new EventReportDTO();

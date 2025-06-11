@@ -57,9 +57,7 @@ public class BookingServiceImpl implements BookingService, BookingSubject {
 
     @Override
     public void notifyObservers(Booking booking, String eventType) {
-        for (BookingObserver observer : observers) {
-            observer.update(booking, eventType);
-        }
+        observers.forEach(observer -> observer.update(booking, eventType));
     }
 
     @Override
