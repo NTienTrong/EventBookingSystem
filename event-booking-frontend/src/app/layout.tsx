@@ -1,22 +1,25 @@
 // app/layout.tsx
-import './globals.css'; // Import global CSS của bạn
+import type { Metadata } from 'next'
+import { Inter } from 'next/font/google'
+import './globals.css'
 
-// Bạn có thể thêm meta data tại đây nếu muốn
-export const metadata = {
-  title: 'EventNest - Đặt Vé Sự Kiện Dễ Dàng',
-  description: 'Khám phá và đặt vé cho các sự kiện yêu thích của bạn.',
-};
+const inter = Inter({ subsets: ['latin'] })
+
+export const metadata: Metadata = {
+  title: 'Hệ thống đặt vé sự kiện',
+  description: 'Đặt vé sự kiện yêu thích của bạn một cách dễ dàng',
+}
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: React.ReactNode
 }) {
   return (
     <html lang="vi">
-      <body>
-        {children}
+      <body className={inter.className}>
+          {children}
       </body>
     </html>
-  );
+  )
 }

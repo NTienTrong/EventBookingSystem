@@ -16,19 +16,15 @@ import java.util.List;
 public interface EventRepository extends JpaRepository<Event, Long> {
     Page<Event> findByStatus(EventStatus status, Pageable pageable);
     
-    @Query("SELECT e FROM Event e WHERE e.status = :status AND e.eventDate > :now")
+    @Query("SELECT e FROM Event e WHERE e.status = :status AND e.startTime > :now")
     Page<Event> findUpcomingEvents(@Param("status") EventStatus status, @Param("now") LocalDateTime now, Pageable pageable);
     
-    @Query("SELECT e FROM Event e WHERE e.status = :status AND e.eventDate < :now")
+    @Query("SELECT e FROM Event e WHERE e.status = :status AND e.startTime < :now")
     Page<Event> findPastEvents(@Param("status") EventStatus status, @Param("now") LocalDateTime now, Pageable pageable);
     
-    @Query("SELECT e FROM Event e WHERE e.status = :status AND " +
-           "LOWER(e.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-           "LOWER(e.description) LIKE LOWER(CONCAT('%', :keyword, '%'))")
+    @Query("SELECT e FROM Event e WHERE e.status = :status AND (LOWER(e.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(e.description) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     Page<Event> searchEvents(@Param("status") EventStatus status, @Param("keyword") String keyword, Pageable pageable);
     
-    List<Event> findByCategoryId(Long categoryId);
-
     List<Event> findByOrganizerId(Long organizerId);
     
     @Query("SELECT e FROM Event e WHERE e.startTime > :now AND e.status = 'ACTIVE'")

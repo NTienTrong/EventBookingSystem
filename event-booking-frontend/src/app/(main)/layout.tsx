@@ -1,9 +1,18 @@
-import { MainLayout } from '@/components/layout/MainLayout';
+import { Header } from '@/components/layout/Header'
+import { Footer } from '@/components/layout/Footer'
 
-export default function MainPagesLayout({
+export default function MainLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: React.ReactNode
 }) {
-  return <MainLayout>{children}</MainLayout>;
-} 
+  return (
+    <>
+        <Header />
+        <main className="container mx-auto px-4 py-8">
+          {children}
+        </main>
+        <Footer />
+    </>
+  )
+}
