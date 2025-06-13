@@ -5,7 +5,6 @@ import { Button } from '@/components/common';
 import { Input } from '@/components/common';
 import { Loading } from '@/components/common';
 import Link from 'next/link';
-import { events, bookings, users } from '@/data/mock';
 
 interface AuthFormProps {
   type: 'login' | 'register' | 'forgot-password';

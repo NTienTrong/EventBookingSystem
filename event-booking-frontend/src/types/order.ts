@@ -1,33 +1,29 @@
+export interface OrderTicket {
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+}
+
 export interface Order {
   id: string;
-  userId: string;
   eventId: string;
-  event: {
-    id: string;
-    name: string;
-    startDate: string;
-    location: string;
-  };
+  eventName: string;
+  eventDate: string;
+  eventLocation: string;
+  customerId: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
   tickets: OrderTicket[];
   totalAmount: number;
-  status: 'pending' | 'paid' | 'cancelled' | 'refunded';
-  paymentMethod: 'credit_card' | 'bank_transfer' | 'momo' | 'zalopay';
-  paymentStatus: 'pending' | 'completed' | 'failed';
+  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
   createdAt: string;
   updatedAt: string;
 }
 
-export interface OrderTicket {
-  id: string;
-  ticketId: string;
-  ticketName: string;
-  quantity: number;
-  price: number;
-  subtotal: number;
-}
-
 export interface OrderFilter {
-  userId?: string;
+  search?: string;
   eventId?: string;
   status?: Order['status'];
   startDate?: string;

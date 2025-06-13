@@ -1,7 +1,7 @@
 // src/components/common/index.ts
+export { default as Modal } from './Modal';
 export { Button } from './Button';
 export { Input } from './Input';
-export { Modal } from './Modal';
 export { Loading } from './Loading';
 export { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './Table';
 export { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './DropdownMenu';

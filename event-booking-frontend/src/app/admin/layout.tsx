@@ -1,108 +1,174 @@
-import Link from 'next/link'
+'use client';
+
+import { useEffect } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
+import Link from 'next/link';
+import {
+  LayoutDashboard,
+  Calendar,
+  Ticket,
+  ShoppingCart,
+  Users,
+  BarChart,
+  LogOut,
+  Menu,
+  ChevronRight,
+} from 'lucide-react';
+import { Button } from '@/components/common';
+import { useAuth } from '@/contexts/AuthContext';
+
+const navItems = [
+  {
+    title: 'Tổng quan',
+    href: '/admin/dashboard',
+    icon: LayoutDashboard,
+    gradient: 'from-blue-500 to-blue-600',
+  },
+  {
+    title: 'Quản lý sự kiện',
+    href: '/admin/events',
+    icon: Calendar,
+    gradient: 'from-green-500 to-green-600',
+  },
+  {
+    title: 'Quản lý vé',
+    href: '/admin/tickets',
+    icon: Ticket,
+    gradient: 'from-purple-500 to-purple-600',
+  },
+  {
+    title: 'Quản lý đơn hàng',
+    href: '/admin/orders',
+    icon: ShoppingCart,
+    gradient: 'from-orange-500 to-orange-600',
+  },
+  {
+    title: 'Quản lý người dùng',
+    href: '/admin/users',
+    icon: Users,
+    gradient: 'from-pink-500 to-pink-600',
+  },
+  {
+    title: 'Báo cáo & Thống kê',
+    href: '/admin/reports',
+    icon: BarChart,
+    gradient: 'from-indigo-500 to-indigo-600',
+  },
+];
 
 export default function AdminLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
-  return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Sidebar */}
-      <div className="fixed inset-y-0 left-0 w-64 bg-white shadow-lg">
-        <div className="flex items-center justify-center h-16 border-b">
-          <h1 className="text-xl font-bold text-blue-600">Admin Dashboard</h1>
-        </div>
-        <nav className="mt-6">
-          <div className="px-4 space-y-2">
-            <Link
-              href="/admin/dashboard"
-              className="flex items-center px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg"
-            >
-              <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-              </svg>
-              Dashboard
-            </Link>
-            <Link
-              href="/admin/events"
-              className="flex items-center px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg"
-            >
-              <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-              </svg>
-              Events
-            </Link>
-            <Link
-              href="/admin/tickets"
-              className="flex items-center px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg"
-            >
-              <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
-              </svg>
-              Tickets
-            </Link>
-            <Link
-              href="/admin/orders"
-              className="flex items-center px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg"
-            >
-              <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-              </svg>
-              Orders
-            </Link>
-            <Link
-              href="/admin/users"
-              className="flex items-center px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg"
-            >
-              <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-              </svg>
-              Users
-            </Link>
-            <Link
-              href="/admin/reports"
-              className="flex items-center px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg"
-            >
-              <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-              Reports
-            </Link>
-          </div>
-        </nav>
-      </div>
+  const router = useRouter();
+  const { user, logout } = useAuth();
+  const pathname = usePathname();
 
-      {/* Main Content */}
-      <div className="ml-64">
-        {/* Top Navigation */}
-        <div className="bg-white shadow-sm">
-          <div className="flex items-center justify-between h-16 px-8">
-            <h2 className="text-xl font-semibold text-gray-800">Dashboard</h2>
-            <div className="flex items-center space-x-4">
-              <button className="p-2 text-gray-600 hover:text-blue-600">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                </svg>
-              </button>
-              <div className="relative">
-                <button className="flex items-center space-x-2 text-gray-600 hover:text-blue-600">
-                  <img
-                    className="w-8 h-8 rounded-full"
-                    src="https://ui-avatars.com/api/?name=Admin"
-                    alt="Admin"
-                  />
-                  <span>Admin</span>
-                </button>
+  useEffect(() => {
+    if (user === null) {
+      return;
+    }
+
+    if (user && user.role !== 'admin') {
+      console.log('Unauthorized access to admin area, redirecting...');
+      router.push('/auth/login');
+    }
+  }, [user, router]);
+
+  const handleLogout = () => {
+    logout();
+    router.push('/');
+  };
+
+  if (user && user.role !== 'admin') {
+    return null;
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Sidebar */}
+      <aside className="fixed inset-y-0 left-0 w-64 bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 text-white border-r border-gray-700 shadow-lg z-30 transition-all duration-300 ease-in-out">
+        <div className="flex flex-col h-full">
+          {/* Logo */}
+          <div className="h-16 flex items-center justify-between px-4 border-b border-gray-700">
+            <Link href="/admin/dashboard" className="flex items-center space-x-2 group">
+              <span className="text-xl font-bold text-white group-hover:text-blue-400 transition-colors duration-200">EventNest</span>
+              <span className="text-sm font-medium text-gray-400 group-hover:text-blue-300 transition-colors duration-200">Admin</span>
+            </Link>
+            <Button variant="ghost" size="icon" className="lg:hidden text-gray-400 hover:text-white hover:bg-gray-700">
+              <Menu className="h-5 w-5" />
+            </Button>
+          </div>
+
+          {/* Navigation */}
+          <nav className="flex-1 overflow-y-auto p-4">
+            <ul className="space-y-2">
+              {navItems.map((item) => {
+                const isActive = pathname.startsWith(item.href);
+                return (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                      className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 group
+                        ${isActive 
+                          ? 'bg-gradient-to-r ' + item.gradient + ' text-white shadow-lg transform scale-105' 
+                          : 'text-gray-300 hover:text-white hover:bg-gray-700'}`}
+                    >
+                      <div className={`p-2 rounded-lg ${isActive ? 'bg-white/20' : 'bg-gray-700 group-hover:bg-gray-600'}`}>
+                        <item.icon className={`h-5 w-5 ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-white'}`} />
+                      </div>
+                      <span className="font-medium">{item.title}</span>
+                      {isActive && (
+                        <ChevronRight className="h-4 w-4 ml-auto text-white/50" />
+                      )}
+                  </Link>
+                </li>
+                );
+              })}
+            </ul>
+          </nav>
+
+          {/* User Menu */}
+          <div className="p-4 border-t border-gray-700">
+            <div className="flex items-center space-x-3 mb-3">
+              <div className="flex-shrink-0">
+                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg">
+                  <span className="text-white font-bold text-lg">{user?.fullName?.charAt(0)}</span>
+                </div>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-white truncate">
+                  {user?.fullName}
+                </p>
+                <p className="text-xs text-gray-400 truncate">{user?.email}</p>
               </div>
             </div>
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-gray-300 hover:text-red-400 hover:bg-gray-700 transition-colors duration-200"
+              onClick={handleLogout}
+            >
+              <LogOut className="h-5 w-5 mr-2" />
+              Đăng xuất
+            </Button>
           </div>
         </div>
+      </aside>
 
-        {/* Page Content */}
-        <main className="p-8">
-          {children}
-        </main>
+      {/* Main Content */}
+      <main className="lg:pl-64">
+        <div className="min-h-screen p-8">
+          <div className="max-w-7xl mx-auto">
+            {children}
+          </div>
+        </div>
+      </main>
+
+      {/* Mobile Menu Overlay */}
+      <div className="fixed inset-0 bg-black bg-opacity-50 z-20 lg:hidden hidden">
+        {/* Mobile menu content */}
       </div>
     </div>
-  )
+  );
 } 

@@ -3,10 +3,11 @@
 import { useState } from 'react';
 import { EventCard } from '@/components/events/EventCard';
 import { EventFilters } from '@/components/events/EventFilters';
-import { events } from '@/data/mock';
+import { mockEvents } from '@/data/mock';
+import { Event } from '@/types/event';
 
 export default function EventsPage() {
-  const [filteredEvents, setFilteredEvents] = useState(events);
+  const [filteredEvents, setFilteredEvents] = useState<Event[]>(mockEvents);
 
   const handleSearch = (filters: {
     search: string;
@@ -14,18 +15,18 @@ export default function EventsPage() {
     location: string;
     category: string;
   }) => {
-    let results = [...events];
+    let results = [...mockEvents];
 
     if (filters.search) {
       results = results.filter(
         (event) =>
-          event.title.toLowerCase().includes(filters.search.toLowerCase()) ||
+          event.name.toLowerCase().includes(filters.search.toLowerCase()) ||
           event.description.toLowerCase().includes(filters.search.toLowerCase())
       );
     }
 
     if (filters.date) {
-      results = results.filter((event) => event.date === filters.date);
+      results = results.filter((event) => event.startDate.includes(filters.date));
     }
 
     if (filters.location) {
@@ -57,8 +58,19 @@ export default function EventsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredEvents.map((event) => (
-            <EventCard key={event.id} {...event} />
+          {filteredEvents.map((event: Event) => (
+            <EventCard 
+              key={event.id}
+              id={event.id}
+              title={event.name}
+              description={event.description}
+              image={event.image}
+              date={event.startDate}
+              time={event.startDate}
+              location={event.location}
+              price={event.tickets[0]?.price || 0}
+              category={event.category}
+            />
           ))}
         </div>
       )}

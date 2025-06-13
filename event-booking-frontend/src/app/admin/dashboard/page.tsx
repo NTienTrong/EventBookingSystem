@@ -1,139 +1,401 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/hooks/useAuth';
+import { useState, useEffect } from 'react';
+import { Card } from '@/components/common';
+import { Button } from '@/components/common';
+import {
+  Users,
+  Calendar,
+  Ticket,
+  ShoppingCart,
+  TrendingUp,
+  TrendingDown,
+  RefreshCw,
+  Bell,
+  Clock,
+} from 'lucide-react';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+} from 'recharts';
 
-export default function AdminDashboard() {
-  const { user, loading } = useAuth();
-  const router = useRouter();
+// Mock data - sẽ được thay thế bằng dữ liệu thực từ API
+const mockData = {
+  totalUsers: 1250,
+  totalEvents: 45,
+  totalTickets: 3200,
+  totalOrders: 890,
+  revenue: {
+    current: 125000000,
+    previous: 98000000,
+  },
+  realTimeStats: {
+    activeUsers: 156,
+    ticketsSoldToday: 45,
+    revenueToday: 4500000,
+    ordersToday: 12,
+  },
+  upcomingEvents: [
+    {
+      id: 1,
+      name: 'Hội thảo Công nghệ 2024',
+      date: '2024-03-15',
+      time: '09:00',
+      location: 'Hội trường A',
+      remainingTickets: 50,
+      totalTickets: 200,
+    },
+    {
+      id: 2,
+      name: 'Workshop Marketing Digital',
+      date: '2024-03-20',
+      time: '14:00',
+      location: 'Phòng họp B',
+      remainingTickets: 30,
+      totalTickets: 100,
+    },
+    {
+      id: 3,
+      name: 'Concert Mùa Hè',
+      date: '2024-04-01',
+      time: '19:00',
+      location: 'Sân vận động X',
+      remainingTickets: 100,
+      totalTickets: 500,
+    },
+  ],
+  recentOrders: [
+    {
+      id: 'ORD001',
+      customer: 'Nguyễn Văn A',
+      amount: 1500000,
+      status: 'completed',
+      date: '2024-03-10',
+    },
+    {
+      id: 'ORD002',
+      customer: 'Trần Thị B',
+      amount: 2500000,
+      status: 'pending',
+      date: '2024-03-11',
+    },
+    {
+      id: 'ORD003',
+      customer: 'Lê Văn C',
+      amount: 1800000,
+      status: 'processing',
+      date: '2024-03-12',
+    },
+  ],
+  salesData: [
+    { time: '00:00', sales: 0 },
+    { time: '04:00', sales: 0 },
+    { time: '08:00', sales: 5 },
+    { time: '12:00', sales: 15 },
+    { time: '16:00', sales: 10 },
+    { time: '20:00', sales: 8 },
+    { time: '24:00', sales: 0 },
+  ],
+  ticketDistribution: [
+    { name: 'Vé thường', value: 1200 },
+    { name: 'Vé VIP', value: 500 },
+    { name: 'Vé đặc biệt', value: 300 },
+  ],
+};
+
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
+
+export default function DashboardPage() {
+  const [isLoading, setIsLoading] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
-    if (!loading && (!user || user.role !== 'admin')) {
-      router.push('/login');
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  const handleReload = async () => {
+    setIsLoading(true);
+    try {
+      // TODO: Implement reload logic
+      await new Promise(resolve => setTimeout(resolve, 500));
+    } catch (error) {
+      console.error('Error reloading data:', error);
+    } finally {
+      setIsLoading(false);
     }
-  }, [user, loading, router]);
+  };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Đang tải...</p>
-        </div>
-      </div>
-    );
-  }
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND',
+    }).format(amount);
+  };
 
-  if (!user || user.role !== 'admin') {
-    return null;
-  }
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return 'bg-green-100 text-green-800';
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'processing':
+        return 'bg-blue-100 text-blue-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString('vi-VN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+  };
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <div className="py-8 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {/* Thống kê tổng quan */}
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0 bg-indigo-500 rounded-md p-3">
-                    <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                    </svg>
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">Tổng số người dùng</dt>
-                      <dd className="text-3xl font-semibold text-gray-900">256</dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0 bg-green-500 rounded-md p-3">
-                    <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">Sự kiện đang diễn ra</dt>
-                      <dd className="text-3xl font-semibold text-gray-900">12</dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0 bg-yellow-500 rounded-md p-3">
-                    <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                    </svg>
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">Doanh thu tháng này</dt>
-                      <dd className="text-3xl font-semibold text-gray-900">15.2M</dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Danh sách sự kiện gần đây */}
-          <div className="mt-8">
-            <h2 className="text-lg font-medium text-gray-900">Sự kiện gần đây</h2>
-            <div className="mt-4 bg-white shadow overflow-hidden sm:rounded-md">
-              <ul className="divide-y divide-gray-200">
-                {[1, 2, 3].map((item) => (
-                  <li key={item}>
-                    <div className="px-4 py-4 sm:px-6">
-                      <div className="flex items-center justify-between">
-                        <div className="text-sm font-medium text-indigo-600 truncate">
-                          Sự kiện âm nhạc {item}
-                        </div>
-                        <div className="ml-2 flex-shrink-0 flex">
-                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                            Đang diễn ra
-                          </span>
-                        </div>
-                      </div>
-                      <div className="mt-2 sm:flex sm:justify-between">
-                        <div className="sm:flex">
-                          <p className="flex items-center text-sm text-gray-500">
-                            <svg className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                            25/03/2024
-                          </p>
-                        </div>
-                        <div className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
-                          <svg className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                          </svg>
-                          Hà Nội, Việt Nam
-                        </div>
-                      </div>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">
+            Tổng quan
+          </h1>
+          <p className="text-sm text-gray-500">
+            Cập nhật lần cuối: {formatTime(currentTime)}
+          </p>
+        </div>
+        <div className="flex items-center space-x-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleReload}
+            disabled={isLoading}
+            className="p-2"
+          >
+            <RefreshCw className={`h-5 w-5 ${isLoading ? 'animate-spin' : ''}`} />
+          </Button>
         </div>
       </div>
+
+      {/* Real-time Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card className="p-6 bg-gradient-to-br from-blue-50 to-blue-100">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-blue-600">Người dùng đang hoạt động</p>
+              <p className="text-2xl font-semibold text-blue-900">{mockData.realTimeStats.activeUsers}</p>
+            </div>
+            <div className="p-3 bg-blue-200 rounded-full">
+              <Users className="h-6 w-6 text-blue-600" />
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-6 bg-gradient-to-br from-green-50 to-green-100">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-green-600">Vé bán hôm nay</p>
+              <p className="text-2xl font-semibold text-green-900">{mockData.realTimeStats.ticketsSoldToday}</p>
+            </div>
+            <div className="p-3 bg-green-200 rounded-full">
+              <Ticket className="h-6 w-6 text-green-600" />
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-6 bg-gradient-to-br from-purple-50 to-purple-100">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-purple-600">Doanh thu hôm nay</p>
+              <p className="text-2xl font-semibold text-purple-900">
+                {formatCurrency(mockData.realTimeStats.revenueToday)}
+              </p>
+            </div>
+            <div className="p-3 bg-purple-200 rounded-full">
+              <TrendingUp className="h-6 w-6 text-purple-600" />
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-6 bg-gradient-to-br from-orange-50 to-orange-100">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-orange-600">Đơn hàng hôm nay</p>
+              <p className="text-2xl font-semibold text-orange-900">{mockData.realTimeStats.ordersToday}</p>
+            </div>
+            <div className="p-3 bg-orange-200 rounded-full">
+              <ShoppingCart className="h-6 w-6 text-orange-600" />
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Upcoming Events */}
+      <Card className="p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-900">Sự kiện sắp diễn ra</h2>
+          <Button variant="outline" size="sm">
+            Xem tất cả
+          </Button>
+        </div>
+        <div className="space-y-4">
+          {mockData.upcomingEvents.map((event) => (
+            <div key={event.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center space-x-4">
+                <div className="p-3 bg-indigo-100 rounded-full">
+                  <Calendar className="h-6 w-6 text-indigo-600" />
+                </div>
+                <div>
+                  <p className="font-medium text-gray-900">{event.name}</p>
+                  <div className="flex items-center space-x-4 text-sm text-gray-500">
+                    <span className="flex items-center">
+                      <Clock className="h-4 w-4 mr-1" />
+                      {event.date} {event.time}
+                    </span>
+                    <span>{event.location}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-sm font-medium text-gray-900">
+                  {event.remainingTickets}/{event.totalTickets} vé còn lại
+                </p>
+                <div className="w-32 h-2 bg-gray-200 rounded-full mt-1">
+                  <div
+                    className="h-full bg-indigo-600 rounded-full"
+                    style={{
+                      width: `${(event.remainingTickets / event.totalTickets) * 100}%`,
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {/* Sales Chart */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Doanh số theo giờ</h2>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={mockData.salesData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="time" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="sales"
+                  stroke="#8884d8"
+                  name="Số vé bán ra"
+                  strokeWidth={2}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+
+        <Card className="p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Phân bố loại vé</h2>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={mockData.ticketDistribution}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {mockData.ticketDistribution.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+      </div>
+
+      {/* Recent Orders */}
+      <Card className="p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-900">Đơn hàng gần đây</h2>
+          <Button variant="outline" size="sm">
+            Xem tất cả
+          </Button>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Mã đơn hàng
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Khách hàng
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Số tiền
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Trạng thái
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Ngày
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {mockData.recentOrders.map((order) => (
+                <tr key={order.id}>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    {order.id}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {order.customer}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {formatCurrency(order.amount)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
+                      {order.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {order.date}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
     </div>
   );
 } 
