@@ -9,9 +9,7 @@ import {
   Ticket,
   ShoppingCart,
   TrendingUp,
-  TrendingDown,
   RefreshCw,
-  Bell,
   Clock,
 } from 'lucide-react';
 import {
@@ -23,8 +21,6 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  BarChart,
-  Bar,
   PieChart,
   Pie,
   Cell,

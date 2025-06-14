@@ -1,16 +1,20 @@
 package com.eventbooking.service;
 
-import com.eventbooking.dto.EventDTO;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+
+import com.eventbooking.dto.EventDTO;
 
 // Service Layer Pattern
 public interface EventService {
-    EventDTO createEvent(EventDTO eventDTO, Long organizerId);
+    List<EventDTO> getAllEvents(String search, String status);
+    EventDTO getEventById(Long id);
+    EventDTO createEvent(EventDTO eventDTO);
     EventDTO updateEvent(Long id, EventDTO eventDTO);
     void deleteEvent(Long id);
-    EventDTO getEventById(Long id);
-    List<EventDTO> getAllEvents();
+    Map<String, Object> getEventStatistics(Long id);
+    
     List<EventDTO> getUpcomingEvents();
     List<EventDTO> getEventsByCategory(String category);
     List<EventDTO> getEventsByLocation(String location);

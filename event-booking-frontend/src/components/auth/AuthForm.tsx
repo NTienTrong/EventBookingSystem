@@ -5,25 +5,56 @@ import { Button } from '@/components/common';
 import { Input } from '@/components/common';
 import { Loading } from '@/components/common';
 import Link from 'next/link';
+import { LoginCredentials, RegisterData, ForgotPasswordRequest } from '@/types/user';
 
 interface AuthFormProps {
   type: 'login' | 'register' | 'forgot-password';
-  onSubmit: (data: any) => Promise<void>;
+  onSubmit: (data: LoginCredentials | RegisterData | ForgotPasswordRequest) => Promise<void>;
   loading?: boolean;
 }
 
 export const AuthForm = ({ type, onSubmit, loading = false }: AuthFormProps) => {
   const [formData, setFormData] = useState({
+    username: '',
     email: '',
     password: '',
     confirmPassword: '',
-    name: '',
-    phone: '',
+    fullName: '',
+    phoneNumber: '',
+    address: '',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await onSubmit(formData);
+    
+    if (type === 'register' && formData.password !== formData.confirmPassword) {
+      alert('Mật khẩu xác nhận không khớp');
+      return;
+    }
+
+    let submitData;
+    if (type === 'login') {
+      submitData = {
+        username: formData.username,
+        password: formData.password,
+      };
+    } else if (type === 'register') {
+      submitData = {
+        username: formData.username,
+        email: formData.email,
+        password: formData.password,
+        fullName: formData.fullName,
+        phoneNumber: formData.phoneNumber,
+        address: formData.address,
+        role: 'USER',
+      };
+    } else {
+      submitData = {
+        email: formData.email,
+      };
+    }
+
+    await onSubmit(submitData as any);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -51,82 +82,95 @@ export const AuthForm = ({ type, onSubmit, loading = false }: AuthFormProps) => 
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {type === 'register' && (
-          <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-              Họ và tên
-            </label>
+        {type === 'login' && (
+          <>
             <Input
-              id="name"
-              name="name"
+              label="Tên đăng nhập"
+              name="username"
               type="text"
-              value={formData.name}
+              value={formData.username}
               onChange={handleChange}
-              placeholder="Nhập họ và tên"
+              required
             />
-          </div>
-        )}
-
-        {type === 'register' && (
-          <div>
-            <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-              Số điện thoại
-            </label>
             <Input
-              id="phone"
-              name="phone"
-              type="tel"
-              value={formData.phone}
-              onChange={handleChange}
-              placeholder="Nhập số điện thoại"
-            />
-          </div>
-        )}
-
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-            Email
-          </label>
-          <Input
-            id="email"
-            name="email"
-            type="email"
-            value={formData.email}
-            onChange={handleChange}
-            placeholder="Nhập email"
-          />
-        </div>
-
-        {type !== 'forgot-password' && (
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-              Mật khẩu
-            </label>
-            <Input
-              id="password"
+              label="Mật khẩu"
               name="password"
               type="password"
               value={formData.password}
               onChange={handleChange}
-              placeholder="Nhập mật khẩu"
+              required
             />
-          </div>
+          </>
         )}
 
         {type === 'register' && (
-          <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
-              Xác nhận mật khẩu
-            </label>
+          <>
             <Input
-              id="confirmPassword"
+              label="Tên đăng nhập"
+              name="username"
+              type="text"
+              value={formData.username}
+              onChange={handleChange}
+              required
+            />
+            <Input
+              label="Email"
+              name="email"
+              type="email"
+              value={formData.email}
+              onChange={handleChange}
+              required
+            />
+            <Input
+              label="Họ và tên"
+              name="fullName"
+              type="text"
+              value={formData.fullName}
+              onChange={handleChange}
+              required
+            />
+            <Input
+              label="Mật khẩu"
+              name="password"
+              type="password"
+              value={formData.password}
+              onChange={handleChange}
+              required
+            />
+            <Input
+              label="Xác nhận mật khẩu"
               name="confirmPassword"
               type="password"
               value={formData.confirmPassword}
               onChange={handleChange}
-              placeholder="Nhập lại mật khẩu"
+              required
             />
-          </div>
+            <Input
+              label="Số điện thoại"
+              name="phoneNumber"
+              type="tel"
+              value={formData.phoneNumber}
+              onChange={handleChange}
+            />
+            <Input
+              label="Địa chỉ"
+              name="address"
+              type="text"
+              value={formData.address}
+              onChange={handleChange}
+            />
+          </>
+        )}
+
+        {type === 'forgot-password' && (
+          <Input
+            label="Email"
+            name="email"
+            type="email"
+            value={formData.email}
+            onChange={handleChange}
+            required
+          />
         )}
 
         <Button type="submit" className="w-full">
@@ -135,15 +179,15 @@ export const AuthForm = ({ type, onSubmit, loading = false }: AuthFormProps) => 
           {type === 'forgot-password' && 'Gửi yêu cầu'}
         </Button>
 
-        <div className="text-center text-sm">
+        <div className="text-center mt-4">
           {type === 'login' && (
             <>
-              <Link href="/forgot-password" className="text-indigo-600 hover:text-indigo-500">
+              <Link href="/auth/forgot-password" className="text-blue-600 hover:underline">
                 Quên mật khẩu?
               </Link>
               <p className="mt-2">
                 Chưa có tài khoản?{' '}
-                <Link href="/register" className="text-indigo-600 hover:text-indigo-500">
+                <Link href="/auth/register" className="text-blue-600 hover:underline">
                   Đăng ký ngay
                 </Link>
               </p>
@@ -152,14 +196,14 @@ export const AuthForm = ({ type, onSubmit, loading = false }: AuthFormProps) => 
           {type === 'register' && (
             <p>
               Đã có tài khoản?{' '}
-              <Link href="/login" className="text-indigo-600 hover:text-indigo-500">
+              <Link href="/auth/login" className="text-blue-600 hover:underline">
                 Đăng nhập
               </Link>
             </p>
           )}
           {type === 'forgot-password' && (
             <p>
-              <Link href="/login" className="text-indigo-600 hover:text-indigo-500">
+              <Link href="/auth/login" className="text-blue-600 hover:underline">
                 Quay lại đăng nhập
               </Link>
             </p>

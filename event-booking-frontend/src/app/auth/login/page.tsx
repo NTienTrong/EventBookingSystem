@@ -3,9 +3,9 @@
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, User } from 'lucide-react';
 import { Button } from '@/components/common';
-import { authService } from '@/data/mock';
+import { authApi } from '@/services/api/auth';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function LoginPage() {
@@ -15,7 +15,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
-    email: '',
+    username: '',
     password: '',
   });
   const [showPassword, setShowPassword] = useState(false);
@@ -34,27 +34,23 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      // TODO: Replace with actual API call
-      // Simulated login
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const fakeUser = {
-        id: '1',
-        email: formData.email,
-        fullName: 'Nguyễn Văn A',
-        role: formData.email.includes('admin') ? 'admin' as const : 'customer' as const,
-        phone: '0123456789',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-
-      login(fakeUser, 'fake-token');
+      const response = await authApi.login(formData);
+      if (!response.accessToken) {
+        setError('Đăng nhập thất bại: Không nhận được accessToken từ server');
+        setIsLoading(false);
+        return;
+      }
+      await login(response.user, response.accessToken);
+      console.log('User after login:', response.user);
+      console.log('User role:', response.user.role);
       
       // Redirect based on role
-      if (fakeUser.role === 'admin') {
-        router.push('/admin/dashboard');
+      if (response.user.role === 'ADMIN') {
+        console.log('Redirecting to admin dashboard...');
+        router.replace('/admin/dashboard');
       } else {
-        router.push('/customer/dashboard');
+        console.log('Redirecting to customer dashboard...');
+        router.replace('/customer/dashboard');
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -85,23 +81,23 @@ export default function LoginPage() {
 
           <div className="space-y-5">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email
+              <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+                Tên đăng nhập
               </label>
               <div className="mt-1 relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-gray-400" />
+                  <User className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
+                  id="username"
+                  name="username"
+                  type="text"
+                  autoComplete="username"
                   required
-                  value={formData.email}
+                  value={formData.username}
                   onChange={handleChange}
                   className="appearance-none block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                  placeholder="you@example.com"
+                  placeholder="Nhập tên đăng nhập"
                 />
               </div>
             </div>
@@ -154,7 +150,7 @@ export default function LoginPage() {
 
             <div className="text-sm">
               <Link
-                href="/forgot-password"
+                href="/auth/forgot-password"
                 className="font-medium text-indigo-600 hover:text-indigo-500"
               >
                 Quên mật khẩu?

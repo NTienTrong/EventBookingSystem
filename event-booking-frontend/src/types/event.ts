@@ -1,23 +1,19 @@
 export interface Event {
-  id: string;
+  id?: number;
   name: string;
   description: string;
-  startDate: string;
-  endDate: string;
+  startTime: string;
+  endTime: string;
   location: string;
-  address: string;
-  category: string;
-  image: string;
+  capacity: number;
+  price: number;
+  imageUrl?: string;
+  category?: string;
   status: 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
-  organizer: {
-    id: string;
-    name: string;
-    email: string;
-    phone: string;
-  };
-  tickets: Ticket[];
-  createdAt: string;
-  updatedAt: string;
+  organizerId: number;
+  totalTickets?: number;
+  soldTickets?: number;
+  revenue?: number;
 }
 
 export interface Ticket {
@@ -27,7 +23,7 @@ export interface Ticket {
   price: number;
   quantity: number;
   sold: number;
-  status: 'available' | 'sold_out' | 'coming_soon';
+  status: 'available' | 'sold_out' | 'cancelled';
   eventId: string;
   createdAt: string;
   updatedAt: string;

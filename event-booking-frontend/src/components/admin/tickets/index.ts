@@ -1,1 +1,1 @@
-export { TicketTypeModal } from './TicketTypeModal'; 
+export { default as TicketTypeModal } from './TicketTypeModal'; 

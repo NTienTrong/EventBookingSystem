@@ -1,5 +1,8 @@
 package com.eventbooking.dto;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -27,6 +30,12 @@ public class UserDTO {
     private String phoneNumber;
     private String address;
     private String role;
+    private boolean active;
+    private LocalDateTime lastLoginAt;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+    private Integer totalOrders;
+    private BigDecimal totalSpent;
 
     // Getters
     public Long getId() { return id; }
@@ -37,6 +46,12 @@ public class UserDTO {
     public String getPhoneNumber() { return phoneNumber; }
     public String getAddress() { return address; }
     public String getRole() { return role; }
+    public boolean isActive() { return active; }
+    public LocalDateTime getLastLoginAt() { return lastLoginAt; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public Integer getTotalOrders() { return totalOrders; }
+    public BigDecimal getTotalSpent() { return totalSpent; }
 
     // Setters
     public void setId(Long id) { this.id = id; }
@@ -47,4 +62,10 @@ public class UserDTO {
     public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
     public void setAddress(String address) { this.address = address; }
     public void setRole(String role) { this.role = role; }
+    public void setActive(boolean active) { this.active = active; }
+    public void setLastLoginAt(LocalDateTime lastLoginAt) { this.lastLoginAt = lastLoginAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    public void setTotalOrders(Integer totalOrders) { this.totalOrders = totalOrders; }
+    public void setTotalSpent(BigDecimal totalSpent) { this.totalSpent = totalSpent; }
 } 

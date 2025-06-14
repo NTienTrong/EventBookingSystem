@@ -43,6 +43,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = (newUser: User, newToken: string) => {
+    if (!newToken) {
+      console.error('Token rỗng khi login!');
+      return;
+    }
     console.log('=== Auth Context Login ===');
     console.log('Setting user:', newUser);
     console.log('Setting token:', newToken);
@@ -55,12 +59,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       expires: 7, // 7 days
       path: '/',
       sameSite: 'lax' as const,
-      secure: window.location.protocol === 'https:',
-      domain: window.location.hostname === 'localhost' ? undefined : window.location.hostname
+      secure: window.location.protocol === 'https:'
     };
 
     console.log('Setting cookies with options:', cookieOptions);
-    console.log('Current domain:', window.location.hostname);
     console.log('Current protocol:', window.location.protocol);
 
     try {
@@ -90,8 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     // Xóa cookies với đầy đủ options
     const cookieOptions = {
-      path: '/',
-      domain: window.location.hostname === 'localhost' ? undefined : window.location.hostname
+      path: '/'
     };
     
     Cookies.remove('user', cookieOptions);

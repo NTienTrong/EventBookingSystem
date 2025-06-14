@@ -1,65 +1,107 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Search, Edit2, Trash2, Eye, RefreshCw } from 'lucide-react';
 import { Button, Card } from '@/components/common';
-import { EventModal } from '@/components/admin/events';
+import { EventModal, EventDetailModal } from '@/components/admin/events';
 import { DeleteConfirmModal } from '@/components/admin/common/DeleteConfirmModal';
-import { mockEvents } from '@/data/mock';
 import { Event } from '@/types/event';
 import { useRouter } from 'next/navigation';
+import { eventApi } from '@/services/api/event';
+import { toast } from 'react-hot-toast';
+import { ToasterProvider } from '@/components/providers/ToasterProvider';
 
 export default function EventsManagementPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [isLoading, setIsLoading] = useState(false);
+  const [events, setEvents] = useState<Event[]>([]);
   const router = useRouter();
 
-  const handleReload = async () => {
+  const loadEvents = async () => {
     setIsLoading(true);
     try {
-      // TODO: Implement reload logic
-      await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API call
+      const data = await eventApi.getAllEvents(
+        searchQuery || undefined,
+        filterStatus !== 'all' ? filterStatus : undefined
+      );
+      setEvents(data);
     } catch (error) {
-      console.error('Error reloading data:', error);
+      console.error('Error loading events:', error);
+      toast.error('Không thể tải danh sách sự kiện');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleCreate = (eventData: Event) => {
-    // TODO: Implement create event
-    console.log('Creating event:', eventData);
-    setIsCreateModalOpen(false);
+  useEffect(() => {
+    loadEvents();
+  }, [searchQuery, filterStatus]);
+
+  const handleReload = async () => {
+    await loadEvents();
   };
 
-  const handleEdit = (eventData: Event) => {
-    // TODO: Implement edit event
-    console.log('Editing event:', eventData);
-    setIsEditModalOpen(false);
+  const handleCreate = async (eventData: Event) => {
+    try {
+      await eventApi.createEvent(eventData);
+      toast.success('Tạo sự kiện thành công');
+      setIsCreateModalOpen(false);
+      loadEvents();
+    } catch (error) {
+      console.error('Error creating event:', error);
+      toast.error('Không thể tạo sự kiện');
+    }
   };
 
-  const handleDelete = () => {
-    // TODO: Implement delete event
-    console.log('Deleting event:', selectedEvent?.id);
-    setIsDeleteModalOpen(false);
+  const handleEdit = async (eventData: Event) => {
+    if (!selectedEvent) return;
+    try {
+      await eventApi.updateEvent(Number(selectedEvent.id), eventData);
+      toast.success('Cập nhật sự kiện thành công');
+      setIsEditModalOpen(false);
+      loadEvents();
+    } catch (error) {
+      console.error('Error updating event:', error);
+      toast.error('Không thể cập nhật sự kiện');
+    }
   };
 
-  const filteredEvents = mockEvents.filter((event) => {
-    const matchesSearch = event.name
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase());
-    const matchesStatus =
-      filterStatus === 'all' || event.status === filterStatus;
-    return matchesSearch && matchesStatus;
-  });
+  const handleDelete = async () => {
+    if (!selectedEvent) return;
+    try {
+      await eventApi.deleteEvent(Number(selectedEvent.id));
+      toast.success('Xóa sự kiện thành công');
+      setIsDeleteModalOpen(false);
+      loadEvents();
+    } catch (error) {
+      console.error('Error deleting event:', error);
+      toast.error('Không thể xóa sự kiện');
+    }
+  };
+
+  const statusStyles: Record<Event['status'], string> = {
+    upcoming: 'bg-yellow-100 text-yellow-800',
+    ongoing: 'bg-green-100 text-green-800',
+    completed: 'bg-gray-100 text-gray-800',
+    cancelled: 'bg-red-100 text-red-800',
+  };
+
+  const statusLabels: Record<Event['status'], string> = {
+    upcoming: 'Sắp diễn ra',
+    ongoing: 'Đang diễn ra',
+    completed: 'Đã kết thúc',
+    cancelled: 'Đã hủy',
+  };
 
   return (
     <div className="space-y-6">
+      <ToasterProvider />
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-gray-900">
           Quản lý sự kiện
@@ -137,13 +179,13 @@ export default function EventsManagementPage() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredEvents.map((event) => (
+              {events.map((event: Event) => (
                 <tr key={event.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="h-10 w-10 flex-shrink-0">
                         <img
-                          src={event.image}
+                          src={event.imageUrl}
                           alt={event.name}
                           className="h-10 w-10 rounded-lg object-cover"
                         />
@@ -153,49 +195,31 @@ export default function EventsManagementPage() {
                           {event.name}
                         </div>
                         <div className="text-sm text-gray-500">
-                          {event.organizer.name}
+                          {event.category}
                         </div>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900">
-                      {new Date(event.startDate).toLocaleDateString('vi-VN')}
+                      {new Date(event.startTime).toLocaleDateString('vi-VN')}
                     </div>
                     <div className="text-sm text-gray-500">
-                      {new Date(event.startDate).toLocaleTimeString('vi-VN')} - {new Date(event.endDate).toLocaleTimeString('vi-VN')}
+                      {new Date(event.startTime).toLocaleTimeString('vi-VN')} - {new Date(event.endTime).toLocaleTimeString('vi-VN')}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{event.address}</div>
-                    <div className="text-sm text-gray-500">
-                      {event.location}
-                    </div>
+                    <div className="text-sm text-gray-900">{event.location}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
-                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        {
-                          upcoming:
-                            'bg-yellow-100 text-yellow-800',
-                          ongoing: 'bg-green-100 text-green-800',
-                          completed: 'bg-gray-100 text-gray-800',
-                          cancelled: 'bg-red-100 text-red-800',
-                        }[event.status]
-                      }`}
+                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusStyles[event.status]}`}
                     >
-                      {
-                        {
-                          upcoming: 'Sắp diễn ra',
-                          ongoing: 'Đang diễn ra',
-                          completed: 'Đã kết thúc',
-                          cancelled: 'Đã hủy',
-                        }[event.status]
-                      }
+                      {statusLabels[event.status]}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {event.tickets.reduce((sum, t) => sum + t.sold, 0)}/{event.tickets.reduce((sum, t) => sum + t.quantity, 0)}
+                    {event.soldTickets}/{event.totalTickets}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex items-center justify-end space-x-2">
@@ -203,7 +227,8 @@ export default function EventsManagementPage() {
                         variant="ghost"
                         size="sm"
                         onClick={() => {
-                          router.push(`/admin/events/${event.id}`);
+                          setSelectedEvent(event);
+                          setIsDetailModalOpen(true);
                         }}
                       >
                         <Eye className="h-4 w-4" />
@@ -238,29 +263,35 @@ export default function EventsManagementPage() {
         </div>
       </Card>
 
-      {/* Create/Edit Modal */}
+      {/* Modals */}
       <EventModal
-        isOpen={isCreateModalOpen || isEditModalOpen}
-        onClose={() => {
-          setIsCreateModalOpen(false);
-          setIsEditModalOpen(false);
-          setSelectedEvent(null);
-        }}
-        onSubmit={isCreateModalOpen ? handleCreate : handleEdit}
-        event={selectedEvent}
-        mode={isCreateModalOpen ? 'create' : 'edit'}
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSubmit={handleCreate}
+        mode="create"
       />
 
-      {/* Delete Confirmation Modal */}
+      <EventModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onSubmit={handleEdit}
+        event={selectedEvent}
+        mode="edit"
+      />
+
+      <EventDetailModal
+        isOpen={isDetailModalOpen}
+        onClose={() => setIsDetailModalOpen(false)}
+        event={selectedEvent}
+        onReload={handleReload}
+      />
+
       <DeleteConfirmModal
         isOpen={isDeleteModalOpen}
-        onClose={() => {
-          setIsDeleteModalOpen(false);
-          setSelectedEvent(null);
-        }}
+        onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={handleDelete}
         title="Xóa sự kiện"
-        message={`Bạn có chắc chắn muốn xóa sự kiện "${selectedEvent?.name}" không? Hành động này không thể hoàn tác.`}
+        message="Bạn có chắc chắn muốn xóa sự kiện này không? Hành động này không thể hoàn tác."
       />
     </div>
   );

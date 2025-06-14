@@ -26,7 +26,7 @@ export default function Header() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      router.push(`/customer/events?search=${encodeURIComponent(searchQuery)}`);
+      router.push(`/events?search=${encodeURIComponent(searchQuery)}`);
     }
   };
 
@@ -72,41 +72,12 @@ export default function Header() {
 
           {/* User Menu */}
           <div className="hidden md:flex items-center space-x-4">
-            {user ? (
-              <div className="relative group">
-                <button className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors">
-                  <div className="h-8 w-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white">
-                    {user.fullName?.charAt(0)}
-                  </div>
-                  <span>{user.fullName}</span>
-                </button>
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 hidden group-hover:block">
-                  <Link
-                    href="/customer/profile"
-                    className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100"
-                  >
-                    <User className="h-5 w-5 mr-2" />
-                    Tài khoản
-                  </Link>
-                  <button
-                    onClick={handleLogout}
-                    className="flex items-center w-full px-4 py-2 text-red-600 hover:bg-gray-100"
-                  >
-                    <LogOut className="h-5 w-5 mr-2" />
-                    Đăng xuất
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center space-x-4">
-                <Link href="/auth/login">
-                  <Button variant="outline">Đăng nhập</Button>
-                </Link>
-                <Link href="/auth/register">
-                  <Button>Đăng ký</Button>
-                </Link>
-              </div>
-            )}
+            <Link href="/auth/login">
+              <Button variant="outline">Đăng nhập</Button>
+            </Link>
+            <Link href="/auth/register">
+              <Button>Đăng ký</Button>
+            </Link>
           </div>
 
           {/* Mobile Menu Button */}
@@ -140,42 +111,23 @@ export default function Header() {
               </div>
             </form>
             <Link
-              href="/customer/events"
+              href="/events"
               className="block px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-gray-50 rounded-md"
             >
               Sự kiện
             </Link>
-            {user ? (
-              <>
-                <Link
-                  href="/customer/profile"
-                  className="block px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-gray-50 rounded-md"
-                >
-                  Tài khoản
-                </Link>
-                <button
-                  onClick={handleLogout}
-                  className="block w-full text-left px-3 py-2 text-red-600 hover:text-red-700 hover:bg-gray-50 rounded-md"
-                >
-                  Đăng xuất
-                </button>
-              </>
-            ) : (
-              <>
-                <Link
-                  href="/auth/login"
-                  className="block px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-gray-50 rounded-md"
-                >
-                  Đăng nhập
-                </Link>
-                <Link
-                  href="/auth/register"
-                  className="block px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-gray-50 rounded-md"
-                >
-                  Đăng ký
-                </Link>
-              </>
-            )}
+            <Link
+              href="/auth/login"
+              className="block px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-gray-50 rounded-md"
+            >
+              Đăng nhập
+            </Link>
+            <Link
+              href="/auth/register"
+              className="block px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-gray-50 rounded-md"
+            >
+              Đăng ký
+            </Link>
           </div>
         </div>
       )}

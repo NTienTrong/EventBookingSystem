@@ -5,7 +5,7 @@ import { Search, Eye, RefreshCw } from 'lucide-react';
 import { Order } from '@/types/order';
 import { Button, Card } from '@/components/common';
 import { OrderDetailModal } from '@/components/admin/orders/OrderDetailModal';
-import { mockOrders } from '@/data/mock';
+
 
 export default function OrderManagementPage() {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);

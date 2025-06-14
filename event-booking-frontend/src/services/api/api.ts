@@ -1,8 +1,9 @@
 import axios from 'axios';
+import Cookies from 'js-cookie';
 
 // Create axios instance with default config
 export const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api',
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -11,8 +12,8 @@ export const api = axios.create({
 // Add request interceptor
 api.interceptors.request.use(
   (config) => {
-    // Get token from localStorage
-    const token = localStorage.getItem('accessToken');
+    // Get token from cookies
+    const token = Cookies.get('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -35,21 +36,26 @@ api.interceptors.response.use(
 
       try {
         // Try to refresh token
-        const refreshToken = localStorage.getItem('refreshToken');
+        const refreshToken = Cookies.get('refreshToken');
         const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/refresh-token`, {
           refreshToken,
         });
 
         const { accessToken } = response.data;
-        localStorage.setItem('accessToken', accessToken);
+        Cookies.set('token', accessToken, {
+          expires: 7,
+          path: '/',
+          sameSite: 'lax',
+          secure: window.location.protocol === 'https:'
+        });
 
         // Retry original request with new token
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         return api(originalRequest);
       } catch (error) {
         // If refresh token fails, logout user
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
+        Cookies.remove('token');
+        Cookies.remove('refreshToken');
         window.location.href = '/auth/login';
         return Promise.reject(error);
       }

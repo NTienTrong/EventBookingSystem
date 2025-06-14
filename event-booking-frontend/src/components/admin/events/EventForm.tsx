@@ -3,34 +3,30 @@
 import { useState } from 'react';
 import { Button } from '@/components/common';
 import { X } from 'lucide-react';
-
-interface EventFormData {
-  title: string;
-  description: string;
-  date: string;
-  time: string;
-  location: string;
-  image: string;
-  category: string;
-  totalTickets: number;
-}
+import { Event } from '@/types/event';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface EventFormProps {
-  initialData?: EventFormData;
-  onSubmit: (data: EventFormData) => void;
+  initialData?: Event;
+  onSubmit: (data: Event) => void;
   onCancel: () => void;
   isSubmitting: boolean;
 }
 
-const defaultFormData: EventFormData = {
-  title: '',
+const defaultFormData: Event = {
+  name: '',
   description: '',
-  date: '',
-  time: '',
+  startTime: '',
+  endTime: '',
   location: '',
-  image: '',
+  capacity: 0,
+  price: 0,
   category: '',
+  status: 'upcoming',
+  organizerId: 0,
   totalTickets: 0,
+  soldTickets: 0,
+  revenue: 0
 };
 
 export default function EventForm({
@@ -39,7 +35,11 @@ export default function EventForm({
   onCancel,
   isSubmitting,
 }: EventFormProps) {
-  const [formData, setFormData] = useState<EventFormData>(initialData);
+  const { user } = useAuth();
+  const [formData, setFormData] = useState<Event>({
+    ...initialData,
+    organizerId: user?.id ? Number(user.id) : 0
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,7 +52,9 @@ export default function EventForm({
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: name === 'totalTickets' ? parseInt(value) || 0 : value,
+      [name]: ['capacity', 'price', 'totalTickets', 'soldTickets'].includes(name) 
+        ? parseInt(value) || 0 
+        : value,
     }));
   };
 
@@ -78,9 +80,9 @@ export default function EventForm({
           </label>
           <input
             type="text"
-            name="title"
+            name="name"
             required
-            value={formData.title}
+            value={formData.name}
             onChange={handleChange}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
@@ -92,7 +94,6 @@ export default function EventForm({
           </label>
           <select
             name="category"
-            required
             value={formData.category}
             onChange={handleChange}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -107,13 +108,13 @@ export default function EventForm({
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Ngày
+            Thời gian bắt đầu
           </label>
           <input
-            type="date"
-            name="date"
+            type="datetime-local"
+            name="startTime"
             required
-            value={formData.date}
+            value={formData.startTime}
             onChange={handleChange}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
@@ -121,13 +122,13 @@ export default function EventForm({
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Thời gian
+            Thời gian kết thúc
           </label>
           <input
-            type="time"
-            name="time"
+            type="datetime-local"
+            name="endTime"
             required
-            value={formData.time}
+            value={formData.endTime}
             onChange={handleChange}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
@@ -149,28 +150,60 @@ export default function EventForm({
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Tổng số vé
+            Sức chứa
           </label>
           <input
             type="number"
-            name="totalTickets"
+            name="capacity"
             required
             min="1"
-            value={formData.totalTickets}
+            value={formData.capacity}
             onChange={handleChange}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
         </div>
 
-        <div className="md:col-span-2">
+        <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Hình ảnh (URL)
+            Giá vé
+          </label>
+          <input
+            type="number"
+            name="price"
+            required
+            min="0"
+            value={formData.price}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Trạng thái
+          </label>
+          <select
+            name="status"
+            required
+            value={formData.status}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          >
+            <option value="upcoming">Sắp diễn ra</option>
+            <option value="ongoing">Đang diễn ra</option>
+            <option value="completed">Đã kết thúc</option>
+            <option value="cancelled">Đã hủy</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            URL hình ảnh
           </label>
           <input
             type="url"
-            name="image"
-            required
-            value={formData.image}
+            name="imageUrl"
+            value={formData.imageUrl || ''}
             onChange={handleChange}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />

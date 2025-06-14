@@ -21,6 +21,11 @@ public class TicketTypeController {
         this.ticketTypeService = ticketTypeService;
     }
 
+    @GetMapping
+    public ResponseEntity<List<TicketTypeDTO>> getAllTicketTypes() {
+        return ResponseEntity.ok(ticketTypeService.getAllTicketTypes());
+    }
+
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<TicketTypeDTO> createTicketType(@RequestBody TicketTypeDTO ticketTypeDTO) {

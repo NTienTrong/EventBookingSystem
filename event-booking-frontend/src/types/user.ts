@@ -1,24 +1,32 @@
 export interface User {
-  id: string;
+  id: number;
+  username: string;
   email: string;
   fullName: string;
+  phoneNumber: string;
   phone: string;
-  role: 'admin' | 'customer';
-  avatar?: string;
+  role: 'ADMIN' | 'USER';
+  isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  lastLoginAt?: string;
+  totalOrders?: number;
+  totalSpent?: number;
 }
 
 export interface LoginCredentials {
-  email: string;
+  username: string;
   password: string;
 }
 
 export interface RegisterData {
-  name: string;
+  username: string;
   email: string;
   password: string;
-  phone: string;
+  fullName: string;
+  phoneNumber?: string;
+  address?: string;
+  role?: 'USER';
 }
 
 export interface UserFilter {
@@ -26,4 +34,13 @@ export interface UserFilter {
   role?: User['role'];
   page?: number;
   limit?: number;
+}
+
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ResetPasswordRequest {
+  token: string;
+  newPassword: string;
 } 

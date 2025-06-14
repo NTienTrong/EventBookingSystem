@@ -6,16 +6,17 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { User, Mail, Lock, Phone, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/common';
-import { authService } from '@/data/mock';
+import { authApi } from '@/services/api/auth';
 
 export default function RegisterPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
-    name: '',
+    username: '',
     email: '',
-    phone: '',
+    fullName: '',
+    phoneNumber: '',
     password: '',
     confirmPassword: '',
   });
@@ -32,8 +33,8 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     setError('');
+    setIsLoading(true);
 
     if (formData.password !== formData.confirmPassword) {
       setError('Mật khẩu và xác nhận mật khẩu không khớp');
@@ -42,14 +43,10 @@ export default function RegisterPage() {
     }
 
     try {
-      await authService.register({
-        ...formData,
-        fullName: formData.name,
-        avatar: '/images/avatar-placeholder.jpg'
-      });
-      router.push('/login?registered=true');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Có lỗi xảy ra khi đăng ký');
+      await authApi.register(formData);
+      router.push('/auth/login?registered=true');
+    } catch (err: any) {
+      setError(err.message || 'Đăng ký thất bại. Vui lòng thử lại.');
     } finally {
       setIsLoading(false);
     }
@@ -74,22 +71,22 @@ export default function RegisterPage() {
 
           <div className="space-y-5">
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                Họ và tên
+              <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+                Tên đăng nhập
               </label>
               <div className="mt-1 relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <User className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
-                  id="name"
-                  name="name"
+                  id="username"
+                  name="username"
                   type="text"
                   required
-                  value={formData.name}
+                  value={formData.username}
                   onChange={handleChange}
                   className="appearance-none block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                  placeholder="Nguyễn Văn A"
+                  placeholder="Nhập tên đăng nhập"
                 />
               </div>
             </div>
@@ -106,7 +103,6 @@ export default function RegisterPage() {
                   id="email"
                   name="email"
                   type="email"
-                  autoComplete="email"
                   required
                   value={formData.email}
                   onChange={handleChange}
@@ -117,7 +113,28 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">
+                Họ và tên
+              </label>
+              <div className="mt-1 relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <User className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  id="fullName"
+                  name="fullName"
+                  type="text"
+                  required
+                  value={formData.fullName}
+                  onChange={handleChange}
+                  className="appearance-none block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  placeholder="Nhập họ và tên"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700">
                 Số điện thoại
               </label>
               <div className="mt-1 relative">
@@ -125,14 +142,13 @@ export default function RegisterPage() {
                   <Phone className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
-                  id="phone"
-                  name="phone"
+                  id="phoneNumber"
+                  name="phoneNumber"
                   type="tel"
-                  required
-                  value={formData.phone}
+                  value={formData.phoneNumber}
                   onChange={handleChange}
                   className="appearance-none block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                  placeholder="0123456789"
+                  placeholder="Nhập số điện thoại"
                 />
               </div>
             </div>
@@ -209,12 +225,15 @@ export default function RegisterPage() {
           >
             {isLoading ? 'Đang đăng ký...' : 'Đăng ký'}
           </Button>
-          <p className="text-center text-sm text-gray-600">
-            Đã có tài khoản?{' '}
-            <Link href="/auth/login" className="font-medium text-indigo-600 hover:text-indigo-500">
-              Đăng nhập ngay
-            </Link>
-          </p>
+
+          <div className="mt-8">
+            <p className="text-center text-sm text-gray-600">
+              Đã có tài khoản?{' '}
+              <Link href="/auth/login" className="font-medium text-indigo-600 hover:text-indigo-500">
+                Đăng nhập
+              </Link>
+            </p>
+          </div>
         </form>
       </div>
     </div>

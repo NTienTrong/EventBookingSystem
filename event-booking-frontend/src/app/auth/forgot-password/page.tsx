@@ -1,27 +1,32 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Button } from '@/components/common';
 import { Mail } from 'lucide-react';
+import { Button } from '@/components/common';
+import { authApi } from '@/services/api/auth';
 
-const ForgotPasswordPage = () => {
+export default function ForgotPasswordPage() {
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
   const [email, setEmail] = useState('');
-  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
-  const [message, setMessage] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setStatus('loading');
-    
+    setIsLoading(true);
+    setError('');
+    setSuccess(false);
+
     try {
-      // TODO: Implement forgot password API call
-      await new Promise(resolve => setTimeout(resolve, 1500)); // Simulated API call
-      setStatus('success');
-      setMessage('Hướng dẫn đặt lại mật khẩu đã được gửi đến email của bạn.');
-    } catch (error) {
-      setStatus('error');
-      setMessage('Có lỗi xảy ra. Vui lòng thử lại sau.');
+      await authApi.forgotPassword(email);
+      setSuccess(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Có lỗi xảy ra khi gửi yêu cầu');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -29,20 +34,22 @@ const ForgotPasswordPage = () => {
     <div className="min-h-screen flex items-center justify-center">
       <div className="max-w-md w-full space-y-6 bg-white p-8 rounded-xl shadow-lg">
         <div className="text-center">
-          <h2 className="text-3xl font-bold text-gray-900">Quên mật khẩu? 🔑</h2>
+          <h2 className="text-3xl font-bold text-gray-900">Quên mật khẩu</h2>
           <p className="mt-2 text-sm text-gray-600">
-            Nhập email của bạn và chúng tôi sẽ gửi hướng dẫn đặt lại mật khẩu
+            Nhập email của bạn để nhận hướng dẫn đặt lại mật khẩu
           </p>
         </div>
 
         <form className="space-y-5" onSubmit={handleSubmit}>
-          {message && (
-            <div
-              className={`${
-                status === 'success' ? 'bg-green-50 text-green-600 border-green-200' : 'bg-red-50 text-red-600 border-red-200'
-              } border px-4 py-3 rounded-lg text-sm`}
-            >
-              {message}
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
+              {error}
+            </div>
+          )}
+
+          {success && (
+            <div className="bg-green-50 border border-green-200 text-green-600 px-4 py-3 rounded-lg text-sm">
+              Hướng dẫn đặt lại mật khẩu đã được gửi đến email của bạn
             </div>
           )}
 
@@ -58,7 +65,6 @@ const ForgotPasswordPage = () => {
                 id="email"
                 name="email"
                 type="email"
-                autoComplete="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -71,21 +77,20 @@ const ForgotPasswordPage = () => {
           <Button
             type="submit"
             className="w-full flex justify-center py-2.5"
-            disabled={status === 'loading'}
+            disabled={isLoading}
           >
-            {status === 'loading' ? 'Đang gửi...' : 'Gửi hướng dẫn đặt lại'}
+            {isLoading ? 'Đang gửi...' : 'Gửi yêu cầu'}
           </Button>
 
-          <p className="text-center text-sm text-gray-600">
-            Nhớ ra mật khẩu?{' '}
-            <Link href="/auth/login" className="font-medium text-indigo-600 hover:text-indigo-500">
-              Quay lại đăng nhập
-            </Link>
-          </p>
+          <div className="mt-8">
+            <p className="text-center text-sm text-gray-600">
+              <Link href="/auth/login" className="font-medium text-indigo-600 hover:text-indigo-500">
+                Quay lại đăng nhập
+              </Link>
+            </p>
+          </div>
         </form>
       </div>
     </div>
   );
-};
-
-export default ForgotPasswordPage; 
+} 

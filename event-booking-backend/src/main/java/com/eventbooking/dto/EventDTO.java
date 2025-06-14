@@ -1,13 +1,14 @@
 package com.eventbooking.dto;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 @Data
 public class EventDTO {
@@ -44,6 +45,10 @@ public class EventDTO {
     private String category;
     private String status;
     private Long organizerId;
+    private Integer totalTickets;
+    private Integer soldTickets;
+    private BigDecimal revenue;
+    private String ticketTypes;
 
     // Getters
     public Long getId() { return id; }
@@ -58,6 +63,10 @@ public class EventDTO {
     public String getCategory() { return category; }
     public String getStatus() { return status; }
     public Long getOrganizerId() { return organizerId; }
+    public Integer getTotalTickets() { return totalTickets; }
+    public Integer getSoldTickets() { return soldTickets; }
+    public BigDecimal getRevenue() { return revenue; }
+    public String getTicketTypes() { return ticketTypes; }
 
     // Setters
     public void setId(Long id) { this.id = id; }
@@ -72,4 +81,8 @@ public class EventDTO {
     public void setCategory(String category) { this.category = category; }
     public void setStatus(String status) { this.status = status; }
     public void setOrganizerId(Long organizerId) { this.organizerId = organizerId; }
+    public void setTotalTickets(Integer totalTickets) { this.totalTickets = totalTickets; }
+    public void setSoldTickets(Integer soldTickets) { this.soldTickets = soldTickets; }
+    public void setRevenue(BigDecimal revenue) { this.revenue = revenue; }
+    public void setTicketTypes(String ticketTypes) { this.ticketTypes = ticketTypes; }
 } 

@@ -15,6 +15,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.Map;
+import java.util.HashMap;
 
 @Service
 @Transactional
@@ -34,8 +36,8 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    public EventDTO createEvent(EventDTO eventDTO, Long organizerId) {
-        User organizer = userRepository.findById(organizerId)
+    public EventDTO createEvent(EventDTO eventDTO) {
+        User organizer = userRepository.findById(eventDTO.getOrganizerId())
             .orElseThrow(() -> new ResourceNotFoundException("Organizer not found"));
         
         Event event = eventFactory.createEvent(eventDTO, organizer);
@@ -79,7 +81,17 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    public List<EventDTO> getAllEvents() {
+    public List<EventDTO> getAllEvents(String search, String status) {
+        if (search != null && !search.isEmpty()) {
+            return eventRepository.searchByName(search).stream()
+                .map(eventFactory::createEventDTO)
+                .collect(Collectors.toList());
+        }
+        if (status != null && !status.isEmpty()) {
+            return eventRepository.findByStatus(status).stream()
+                .map(eventFactory::createEventDTO)
+                .collect(Collectors.toList());
+        }
         return eventRepository.findAll().stream()
             .map(eventFactory::createEventDTO)
             .collect(Collectors.toList());
@@ -142,5 +154,17 @@ public class EventServiceImpl implements EventService {
         return eventRepository.searchByNameLocationAndCategory(keyword, location, category).stream()
             .map(eventFactory::createEventDTO)
             .collect(Collectors.toList());
+    }
+
+    @Override
+    public Map<String, Object> getEventStatistics(Long id) {
+        Event event = eventRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Event not found"));
+        
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("totalTickets", event.getTotalTickets());
+        stats.put("soldTickets", event.getSoldTickets());
+        stats.put("revenue", event.getRevenue());
+        return stats;
     }
 } 

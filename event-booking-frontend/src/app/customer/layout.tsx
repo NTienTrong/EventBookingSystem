@@ -63,7 +63,7 @@ export default function CustomerLayout({
       return;
     }
 
-    if (user && user.role !== 'customer') {
+    if (user && user.role?.toUpperCase() !== 'CUSTOMER') {
       console.log('Unauthorized access to customer area, redirecting...');
       router.push('/auth/login');
     }
@@ -74,7 +74,7 @@ export default function CustomerLayout({
     router.push('/');
   };
 
-  if (user && user.role !== 'customer') {
+  if (user && user.role?.toUpperCase() !== 'CUSTOMER') {
     return null;
   }
 

@@ -1,12 +1,19 @@
 package com.eventbooking.model;
 
-import jakarta.persistence.*;
-import lombok.Data;
+import java.time.LocalDateTime;
+
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import java.time.LocalDateTime;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.Data;
 
 @Data
 @Entity
@@ -32,6 +39,9 @@ public class User {
     private String phoneNumber;
     private String address;
     private String role;
+    private String resetToken;
+    private boolean active = true;
+    private LocalDateTime lastLoginAt;
 
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -50,6 +60,9 @@ public class User {
     public String getPhoneNumber() { return phoneNumber; }
     public String getAddress() { return address; }
     public String getRole() { return role; }
+    public String getResetToken() { return resetToken; }
+    public boolean isActive() { return active; }
+    public LocalDateTime getLastLoginAt() { return lastLoginAt; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
 
@@ -62,6 +75,9 @@ public class User {
     public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
     public void setAddress(String address) { this.address = address; }
     public void setRole(String role) { this.role = role; }
+    public void setResetToken(String resetToken) { this.resetToken = resetToken; }
+    public void setActive(boolean active) { this.active = active; }
+    public void setLastLoginAt(LocalDateTime lastLoginAt) { this.lastLoginAt = lastLoginAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 } 

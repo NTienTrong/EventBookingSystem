@@ -1,57 +1,167 @@
 package com.eventbooking.controller;
 
-import com.eventbooking.dto.EventDTO;
-import com.eventbooking.service.EventService;
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
+import com.eventbooking.dto.EventDTO;
+import com.eventbooking.exception.BadRequestException;
+import com.eventbooking.exception.InternalServerException;
+import com.eventbooking.exception.ResourceNotFoundException;
+import com.eventbooking.service.EventService;
 
 @RestController
 @RequestMapping("/api/events")
+@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
 public class EventController {
 
     @Autowired
     private EventService eventService;
 
-    @PostMapping
-    public ResponseEntity<EventDTO> createEvent(@RequestBody EventDTO eventDTO, Authentication authentication) {
-        // Lấy ID của user hiện tại từ authentication
-        Long organizerId = Long.parseLong(authentication.getName());
-        return ResponseEntity.ok(eventService.createEvent(eventDTO, organizerId));
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<EventDTO> updateEvent(@PathVariable Long id, @RequestBody EventDTO eventDTO) {
-        return ResponseEntity.ok(eventService.updateEvent(id, eventDTO));
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteEvent(@PathVariable Long id) {
-        eventService.deleteEvent(id);
-        return ResponseEntity.ok().build();
+    @GetMapping
+    public ResponseEntity<List<EventDTO>> getAllEvents(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String status) {
+        try {
+            List<EventDTO> events = eventService.getAllEvents(search, status);
+            return ResponseEntity.ok(events);
+        } catch (ResourceNotFoundException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new InternalServerException("Error fetching events: " + e.getMessage());
+        }
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<EventDTO> getEventById(@PathVariable Long id) {
-        return ResponseEntity.ok(eventService.getEventById(id));
+        try {
+            EventDTO event = eventService.getEventById(id);
+            return ResponseEntity.ok(event);
+        } catch (ResourceNotFoundException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new InternalServerException("Error fetching event: " + e.getMessage());
+        }
     }
 
-    @GetMapping
-    public ResponseEntity<List<EventDTO>> getAllEvents() {
-        return ResponseEntity.ok(eventService.getAllEvents());
+    @PostMapping
+    public ResponseEntity<EventDTO> createEvent(@RequestBody EventDTO eventDTO) {
+        try {
+            if (eventDTO.getOrganizerId() == null) {
+                throw new BadRequestException("Organizer ID is required");
+            }
+            EventDTO createdEvent = eventService.createEvent(eventDTO);
+            return ResponseEntity.ok(createdEvent);
+        } catch (BadRequestException e) {
+            throw e;
+        } catch (ResourceNotFoundException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new InternalServerException("Error creating event: " + e.getMessage());
+        }
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<EventDTO> updateEvent(
+            @PathVariable Long id,
+            @RequestBody EventDTO eventDTO) {
+        try {
+            if (eventDTO.getOrganizerId() == null) {
+                throw new BadRequestException("Organizer ID is required");
+            }
+            EventDTO updatedEvent = eventService.updateEvent(id, eventDTO);
+            return ResponseEntity.ok(updatedEvent);
+        } catch (BadRequestException e) {
+            throw e;
+        } catch (ResourceNotFoundException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new InternalServerException("Error updating event: " + e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteEvent(@PathVariable Long id) {
+        try {
+            eventService.deleteEvent(id);
+            return ResponseEntity.ok().build();
+        } catch (ResourceNotFoundException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new InternalServerException("Error deleting event: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/{id}/statistics")
+    public ResponseEntity<Map<String, Object>> getEventStatistics(@PathVariable Long id) {
+        try {
+            Map<String, Object> stats = eventService.getEventStatistics(id);
+            return ResponseEntity.ok(stats);
+        } catch (ResourceNotFoundException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new InternalServerException("Error fetching event statistics: " + e.getMessage());
+        }
     }
 
     @GetMapping("/organizer/{organizerId}")
     public ResponseEntity<List<EventDTO>> getEventsByOrganizer(@PathVariable Long organizerId) {
-        return ResponseEntity.ok(eventService.getEventsByOrganizer(organizerId));
+        try {
+            List<EventDTO> events = eventService.getEventsByOrganizer(organizerId);
+            return ResponseEntity.ok(events);
+        } catch (ResourceNotFoundException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new InternalServerException("Error fetching organizer events: " + e.getMessage());
+        }
     }
 
     @GetMapping("/category/{category}")
     public ResponseEntity<List<EventDTO>> getEventsByCategory(@PathVariable String category) {
-        return ResponseEntity.ok(eventService.getEventsByCategory(category));
+        try {
+            List<EventDTO> events = eventService.getEventsByCategory(category);
+            return ResponseEntity.ok(events);
+        } catch (ResourceNotFoundException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new InternalServerException("Error fetching category events: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/upcoming")
+    public ResponseEntity<List<EventDTO>> getUpcomingEvents() {
+        try {
+            List<EventDTO> events = eventService.getUpcomingEvents();
+            return ResponseEntity.ok(events);
+        } catch (ResourceNotFoundException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new InternalServerException("Error fetching upcoming events: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/location/{location}")
+    public ResponseEntity<List<EventDTO>> getEventsByLocation(@PathVariable String location) {
+        try {
+            List<EventDTO> events = eventService.getEventsByLocation(location);
+            return ResponseEntity.ok(events);
+        } catch (ResourceNotFoundException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new InternalServerException("Error fetching location events: " + e.getMessage());
+        }
     }
 
     @GetMapping("/search")
@@ -59,13 +169,22 @@ public class EventController {
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String location,
             @RequestParam(required = false) String category) {
-        if (keyword != null && location != null && category != null) {
-            return ResponseEntity.ok(eventService.searchEventsByNameLocationAndCategory(keyword, location, category));
-        } else if (keyword != null && location != null) {
-            return ResponseEntity.ok(eventService.searchEventsByNameAndLocation(keyword, location));
-        } else if (keyword != null) {
-            return ResponseEntity.ok(eventService.searchEventsByName(keyword));
+        try {
+            List<EventDTO> events;
+            if (keyword != null && location != null && category != null) {
+                events = eventService.searchEventsByNameLocationAndCategory(keyword, location, category);
+            } else if (keyword != null && location != null) {
+                events = eventService.searchEventsByNameAndLocation(keyword, location);
+            } else if (keyword != null) {
+                events = eventService.searchEventsByName(keyword);
+            } else {
+                events = eventService.getAllEvents(null, null);
+            }
+            return ResponseEntity.ok(events);
+        } catch (ResourceNotFoundException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new InternalServerException("Error searching events: " + e.getMessage());
         }
-        return ResponseEntity.ok(eventService.getAllEvents());
     }
 } 

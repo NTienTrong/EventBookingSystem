@@ -1,18 +1,19 @@
 package com.eventbooking.service.impl;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.eventbooking.dto.TicketTypeDTO;
+import com.eventbooking.exception.ResourceNotFoundException;
 import com.eventbooking.model.Event;
 import com.eventbooking.model.TicketType;
 import com.eventbooking.repository.EventRepository;
 import com.eventbooking.repository.TicketTypeRepository;
 import com.eventbooking.service.TicketTypeService;
-import com.eventbooking.exception.ResourceNotFoundException;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -26,6 +27,13 @@ public class TicketTypeServiceImpl implements TicketTypeService {
                                EventRepository eventRepository) {
         this.ticketTypeRepository = ticketTypeRepository;
         this.eventRepository = eventRepository;
+    }
+
+    @Override
+    public List<TicketTypeDTO> getAllTicketTypes() {
+        return ticketTypeRepository.findAll().stream()
+            .map(this::convertToDTO)
+            .collect(Collectors.toList());
     }
 
     @Override

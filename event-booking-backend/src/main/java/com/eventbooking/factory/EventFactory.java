@@ -1,9 +1,10 @@
 package com.eventbooking.factory;
 
+import org.springframework.stereotype.Component;
+
 import com.eventbooking.dto.EventDTO;
 import com.eventbooking.model.Event;
 import com.eventbooking.model.User;
-import org.springframework.stereotype.Component;
 
 // Factory Pattern: Tách biệt logic tạo đối tượng
 @Component
@@ -22,6 +23,9 @@ public class EventFactory {
         event.setCategory(dto.getCategory());
         event.setStatus(dto.getStatus());
         event.setOrganizer(organizer);
+        event.setTotalTickets(dto.getTotalTickets());
+        event.setSoldTickets(dto.getSoldTickets());
+        event.setRevenue(dto.getRevenue());
         return event;
     }
 
@@ -39,6 +43,9 @@ public class EventFactory {
         dto.setCategory(event.getCategory());
         dto.setStatus(event.getStatus());
         dto.setOrganizerId(event.getOrganizer().getId());
+        dto.setTotalTickets(event.getTotalTickets());
+        dto.setSoldTickets(event.getSoldTickets());
+        dto.setRevenue(event.getRevenue());
         return dto;
     }
 } 

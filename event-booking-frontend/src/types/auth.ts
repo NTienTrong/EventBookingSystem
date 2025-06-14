@@ -1,6 +1,12 @@
+import { User } from './user';
+
 export interface AuthUser {
-  id: string;
-  name: string;
-  email: string;
-  role: 'admin' | 'customer';
+  user: User;
+  token: string;
+}
+
+export interface AuthResponse {
+  success: boolean;
+  message?: string;
+  data?: AuthUser;
 } 

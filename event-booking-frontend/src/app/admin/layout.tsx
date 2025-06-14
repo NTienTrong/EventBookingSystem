@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
+import { Toaster } from 'react-hot-toast';
 import {
   LayoutDashboard,
   Calendar,
@@ -70,7 +71,7 @@ export default function AdminLayout({
       return;
     }
 
-    if (user && user.role !== 'admin') {
+    if (user && user.role !== 'ADMIN') {
       console.log('Unauthorized access to admin area, redirecting...');
       router.push('/auth/login');
     }
@@ -81,12 +82,13 @@ export default function AdminLayout({
     router.push('/');
   };
 
-  if (user && user.role !== 'admin') {
+  if (user && user.role !== 'ADMIN') {
     return null;
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <Toaster position="top-right" />
       {/* Sidebar */}
       <aside className="fixed inset-y-0 left-0 w-64 bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 text-white border-r border-gray-700 shadow-lg z-30 transition-all duration-300 ease-in-out">
         <div className="flex flex-col h-full">

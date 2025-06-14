@@ -1,21 +1,31 @@
 package com.eventbooking.controller;
 
-import com.eventbooking.dto.JwtAuthenticationResponse;
-import com.eventbooking.dto.LoginRequest;
-import com.eventbooking.dto.UserDTO;
-import com.eventbooking.security.JwtTokenProvider;
-import com.eventbooking.service.UserService;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.eventbooking.dto.ForgotPasswordRequest;
+import com.eventbooking.dto.LoginRequest;
+import com.eventbooking.dto.ResetPasswordRequest;
+import com.eventbooking.dto.UserDTO;
+import com.eventbooking.security.JwtTokenProvider;
+import com.eventbooking.service.UserService;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "*")
 public class AuthController {
 
     @Autowired
@@ -29,21 +39,88 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> authenticateUser(@RequestBody LoginRequest loginRequest) {
-        Authentication authentication = authenticationManager.authenticate(
-            new UsernamePasswordAuthenticationToken(
-                loginRequest.getUsername(),
-                loginRequest.getPassword()
-            )
-        );
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                    loginRequest.getUsername(),
+                    loginRequest.getPassword()
+                )
+            );
 
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-        String jwt = tokenProvider.generateToken(authentication);
-        return ResponseEntity.ok(new JwtAuthenticationResponse(jwt));
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+            String jwt = tokenProvider.generateToken(authentication);
+            
+            // Get user data from authentication
+            UserDTO userDTO = userService.getUserByUsername(loginRequest.getUsername());
+            
+            // Create response with both token and user data
+            Map<String, Object> response = new HashMap<>();
+            response.put("accessToken", jwt);
+            response.put("user", userDTO);
+            
+            return ResponseEntity.ok(response);
+        } catch (BadCredentialsException e) {
+            return ResponseEntity.badRequest().body("Invalid username or password");
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("An error occurred during authentication");
+        }
     }
 
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody UserDTO userDTO) {
-        UserDTO createdUser = userService.createUser(userDTO);
-        return ResponseEntity.ok(createdUser);
+        try {
+            // Validate required fields
+            if (userDTO.getUsername() == null || userDTO.getUsername().trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Username is required"));
+            }
+            if (userDTO.getEmail() == null || userDTO.getEmail().trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Email is required"));
+            }
+            if (userDTO.getPassword() == null || userDTO.getPassword().trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Password is required"));
+            }
+            if (userDTO.getFullName() == null || userDTO.getFullName().trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Full name is required"));
+            }
+
+            UserDTO createdUser = userService.createUser(userDTO);
+            return ResponseEntity.ok(createdUser);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody ForgotPasswordRequest request) {
+        try {
+            userService.sendPasswordResetEmail(request.getEmail());
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequest request) {
+        try {
+            userService.resetPassword(request.getToken(), request.getNewPassword());
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    // Temporary endpoint to view user info (including encoded password)
+    @GetMapping("/debug/user/{username}")
+    public ResponseEntity<?> getUserInfo(@PathVariable String username) {
+        try {
+            UserDTO user = userService.getUserByUsername(username);
+            Map<String, Object> response = new HashMap<>();
+            response.put("username", user.getUsername());
+            response.put("role", user.getRole());
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 } 

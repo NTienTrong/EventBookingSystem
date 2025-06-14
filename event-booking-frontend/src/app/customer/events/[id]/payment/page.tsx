@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/common';
 import Image from 'next/image';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface OrderData {
   eventId: string;
@@ -35,46 +36,34 @@ interface BankInfo {
   qrCode: string;
 }
 
-const bankAccounts: BankInfo[] = [
-  {
-    id: 'vietcombank',
-    name: 'Vietcombank',
-    accountNumber: '1234567890',
-    accountName: 'CONG TY TNHH EVENTNEST',
-    qrCode: '/images/qr/vietcombank.png',
-  },
-  {
-    id: 'techcombank',
-    name: 'Techcombank',
-    accountNumber: '9876543210',
-    accountName: 'CONG TY TNHH EVENTNEST',
-    qrCode: '/images/qr/techcombank.png',
-  },
-  {
-    id: 'mbbank',
-    name: 'MB Bank',
-    accountNumber: '4567890123',
-    accountName: 'CONG TY TNHH EVENTNEST',
-    qrCode: '/images/qr/mbbank.png',
-  },
-];
-
 export default function PaymentPage({ params }: { params: { id: string } }) {
   const router = useRouter();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [orderData, setOrderData] = useState<OrderData | null>(null);
   const [selectedBank, setSelectedBank] = useState<string>('');
   const [showQR, setShowQR] = useState(false);
   const [paymentTimeout, setPaymentTimeout] = useState<number>(900); // 15 minutes in seconds
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const storedOrder = localStorage.getItem('currentOrder');
-    if (storedOrder) {
-      setOrderData(JSON.parse(storedOrder));
-    }
-    setLoading(false);
-  }, []);
+    const fetchOrderData = async () => {
+      try {
+        // TODO: Call API to get order data
+        // const response = await fetch(`/api/orders/${params.id}`);
+        // const data = await response.json();
+        // setOrderData(data);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching order data:', error);
+        setError('Không thể tải thông tin đơn hàng');
+        setLoading(false);
+      }
+    };
+
+    fetchOrderData();
+  }, [params.id]);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -90,28 +79,58 @@ export default function PaymentPage({ params }: { params: { id: string } }) {
     if (processing) return;
     
     setProcessing(true);
+    setError(null);
 
     try {
       if (!selectedBank) {
-        alert('Vui lòng chọn ngân hàng thanh toán');
-        setProcessing(false);
-        return;
+        throw new Error('Vui lòng chọn ngân hàng thanh toán');
       }
 
+      // TODO: Call API to initiate payment
+      // const response = await fetch('/api/payments/initiate', {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //   },
+      //   body: JSON.stringify({
+      //     orderId: params.id,
+      //     bankId: selectedBank,
+      //   }),
+      // });
+      // const data = await response.json();
+      
       setShowQR(true);
     } catch (error) {
       console.error('Error processing payment:', error);
-      alert('Có lỗi xảy ra khi xử lý thanh toán. Vui lòng thử lại.');
+      setError(error instanceof Error ? error.message : 'Có lỗi xảy ra khi xử lý thanh toán');
     } finally {
       setProcessing(false);
     }
   };
 
-  const handlePaymentSuccess = () => {
-    // Clear order data from localStorage
-    localStorage.removeItem('currentOrder');
-    // Redirect to success page
-    router.push(`/customer/events/${params.id}/booking/success`);
+  const handlePaymentSuccess = async () => {
+    try {
+      // TODO: Call API to confirm payment
+      // const response = await fetch('/api/payments/confirm', {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //   },
+      //   body: JSON.stringify({
+      //     orderId: params.id,
+      //     bankId: selectedBank,
+      //   }),
+      // });
+      // const data = await response.json();
+
+      // Clear order data from localStorage
+      localStorage.removeItem('currentOrder');
+      // Redirect to success page
+      router.push(`/customer/events/${params.id}/booking/success`);
+    } catch (error) {
+      console.error('Error confirming payment:', error);
+      setError('Có lỗi xảy ra khi xác nhận thanh toán');
+    }
   };
 
   if (loading) {
@@ -159,6 +178,20 @@ export default function PaymentPage({ params }: { params: { id: string } }) {
         <p className="text-gray-500 mt-1">Chọn ngân hàng để thanh toán</p>
       </div>
 
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-md p-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <AlertCircle className="h-5 w-5 text-red-400" />
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Order Summary */}
       <div className="bg-white rounded-lg shadow-md p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Thông tin đơn hàng</h2>
@@ -194,7 +227,8 @@ export default function PaymentPage({ params }: { params: { id: string } }) {
         <div className="bg-white rounded-lg shadow-md p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Chọn ngân hàng</h2>
           <div className="grid gap-4">
-            {bankAccounts.map((bank) => (
+            {/* TODO: Fetch bank list from API */}
+            {/* {banks.map((bank) => (
               <div
                 key={bank.id}
                 className={`border rounded-lg p-4 cursor-pointer transition-colors
@@ -216,7 +250,7 @@ export default function PaymentPage({ params }: { params: { id: string } }) {
                   </div>
                 </div>
               </div>
-            ))}
+            ))} */}
           </div>
         </div>
 
@@ -260,20 +294,22 @@ export default function PaymentPage({ params }: { params: { id: string } }) {
                 Thời gian còn lại: {formatTime(paymentTimeout)}
               </p>
               
+              {/* TODO: Display QR code from API response */}
               <div className="bg-white p-4 rounded-lg border border-gray-200 mb-4">
-                <Image
-                  src={bankAccounts.find(b => b.id === selectedBank)?.qrCode || ''}
+                {/* <Image
+                  src={qrCodeUrl}
                   alt="QR Code"
                   width={200}
                   height={200}
                   className="mx-auto"
-                />
+                /> */}
               </div>
 
               <div className="space-y-2 text-sm text-gray-600 mb-6">
-                <p>Ngân hàng: {bankAccounts.find(b => b.id === selectedBank)?.name}</p>
-                <p>Số tài khoản: {bankAccounts.find(b => b.id === selectedBank)?.accountNumber}</p>
-                <p>Tên tài khoản: {bankAccounts.find(b => b.id === selectedBank)?.accountName}</p>
+                {/* TODO: Display bank info from API response */}
+                {/* <p>Ngân hàng: {selectedBank?.name}</p>
+                <p>Số tài khoản: {selectedBank?.accountNumber}</p>
+                <p>Tên tài khoản: {selectedBank?.accountName}</p> */}
                 <p className="font-semibold text-blue-600">
                   Số tiền: {new Intl.NumberFormat('vi-VN', {
                     style: 'currency',
