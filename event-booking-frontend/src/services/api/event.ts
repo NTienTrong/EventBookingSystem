@@ -2,7 +2,16 @@ import api from './api';
 import { Event } from '@/types/event';
 
 export const eventApi = {
-  getAllEvents: () => api.get<Event[]>('/events'),
+  getAllEvents: (params?: { search?: string; status?: string }) => {
+    let query = '';
+    if (params) {
+      const q = [];
+      if (params.search) q.push(`search=${encodeURIComponent(params.search)}`);
+      if (params.status && params.status !== 'all') q.push(`status=${encodeURIComponent(params.status)}`);
+      if (q.length > 0) query = '?' + q.join('&');
+    }
+    return api.get<Event[]>(`/events${query}`);
+  },
   
   getEventById: (id: number) => api.get<Event>(`/events/${id}`),
   

@@ -72,7 +72,7 @@ export default function UsersManagement() {
     const matchesSearch =
       user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (user.phone ?? user.phoneNumber ?? '').includes(searchTerm);
+      (user.phoneNumber ?? '').includes(searchTerm);
     const matchesRole = roleFilter === 'all' || user.role === roleFilter;
     return matchesSearch && matchesRole;
   });
@@ -180,7 +180,7 @@ export default function UsersManagement() {
                   </td>
                   <td className="px-6 py-4">
                     <div className="text-sm text-gray-900">{user.email}</div>
-                    <div className="text-sm text-gray-500">{user.phone}</div>
+                    
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
@@ -211,19 +211,7 @@ export default function UsersManagement() {
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
-                      {user.role !== 'ADMIN' && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                          onClick={() => {
-                            setSelectedUser(user);
-                            setIsDeleteModalOpen(true);
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
+  
                     </div>
                   </td>
                 </tr>

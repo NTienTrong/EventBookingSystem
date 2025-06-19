@@ -86,6 +86,7 @@ public class AuthController {
                 return ResponseEntity.badRequest().body(Map.of("error", "Full name is required"));
             }
 
+            user.setRole(com.eventbooking.entity.UserRole.CUSTOMER);
             User createdUser = userService.createUser(user);
             return ResponseEntity.ok(createdUser);
         } catch (RuntimeException e) {

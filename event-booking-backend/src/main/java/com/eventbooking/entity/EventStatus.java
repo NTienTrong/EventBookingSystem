@@ -1,4 +1,4 @@
-package com.eventbooking.model;
+package com.eventbooking.entity;
 
 public enum EventStatus {
     DRAFT,

@@ -26,7 +26,10 @@ export default function EventsManagementPage() {
   const loadEvents = async () => {
     setIsLoading(true);
     try {
-      const response = await eventApi.getAllEvents();
+      const response = await eventApi.getAllEvents({
+        search: searchQuery,
+        status: filterStatus
+      });
       setEvents(response.data);
     } catch (error) {
       console.error('Error loading events:', error);
