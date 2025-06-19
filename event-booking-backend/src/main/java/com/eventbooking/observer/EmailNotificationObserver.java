@@ -1,7 +1,8 @@
 package com.eventbooking.observer;
 
-import com.eventbooking.model.Booking;
 import org.springframework.stereotype.Component;
+
+import com.eventbooking.entity.Booking;
 
 @Component
 public class EmailNotificationObserver implements BookingObserver {

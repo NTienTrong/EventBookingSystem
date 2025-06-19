@@ -1,16 +1,15 @@
 package com.eventbooking.service;
 
-import com.eventbooking.dto.BookingDTO;
 import java.util.List;
 
-// Service Layer Pattern
+import com.eventbooking.dto.BookingDTO;
+import com.eventbooking.dto.BookingRequestDTO;
+import com.eventbooking.exception.ResourceNotFoundException;
+
 public interface BookingService {
-    BookingDTO createBooking(BookingDTO bookingDTO);
-    BookingDTO updateBooking(Long id, BookingDTO bookingDTO);
-    void cancelBooking(Long id);
-    BookingDTO getBookingById(Long id);
-    List<BookingDTO> getBookingsByUserId(Long userId);
-    List<BookingDTO> getBookingsByEventId(Long eventId);
+    BookingDTO createBooking(BookingRequestDTO request);
+    BookingDTO getBookingById(Long id) throws ResourceNotFoundException;
+    BookingDTO getBookingByOrderNumber(String orderNumber) throws ResourceNotFoundException;
     List<BookingDTO> getAllBookings();
-    void processPayment(Long id, String paymentMethod, String transactionId);
-} 
+    void processPayment(Long bookingId, String paymentMethod, String transactionId);
+}

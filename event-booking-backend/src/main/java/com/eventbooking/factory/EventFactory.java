@@ -1,31 +1,36 @@
 package com.eventbooking.factory;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.eventbooking.dto.EventDTO;
-import com.eventbooking.model.Event;
-import com.eventbooking.model.User;
+import com.eventbooking.entity.Event;
+import com.eventbooking.entity.User;
+import com.eventbooking.enums.EventStatus;
+import com.eventbooking.repository.UserRepository;
 
 // Factory Pattern: Tách biệt logic tạo đối tượng
 @Component
 public class EventFactory {
-    
-    public Event createEvent(EventDTO dto, User organizer) {
+    @Autowired
+    private UserRepository userRepository;
+
+    public Event createEvent(EventDTO dto) {
         Event event = new Event();
         event.setName(dto.getName());
         event.setDescription(dto.getDescription());
         event.setStartTime(dto.getStartTime());
         event.setEndTime(dto.getEndTime());
         event.setLocation(dto.getLocation());
-        event.setCapacity(dto.getCapacity());
-        event.setPrice(dto.getPrice());
         event.setImageUrl(dto.getImageUrl());
         event.setCategory(dto.getCategory());
-        event.setStatus(dto.getStatus());
-        event.setOrganizer(organizer);
+        event.setCapacity(dto.getCapacity());
         event.setTotalTickets(dto.getTotalTickets());
         event.setSoldTickets(dto.getSoldTickets());
-        event.setRevenue(dto.getRevenue());
+        event.setStatus(EventStatus.valueOf(dto.getStatus().toUpperCase()));
+        // Set organizer as admin with id 1
+        User admin = userRepository.findById(1L).orElse(null);
+        event.setOrganizer(admin);
         return event;
     }
 
@@ -37,15 +42,15 @@ public class EventFactory {
         dto.setStartTime(event.getStartTime());
         dto.setEndTime(event.getEndTime());
         dto.setLocation(event.getLocation());
-        dto.setCapacity(event.getCapacity());
-        dto.setPrice(event.getPrice());
         dto.setImageUrl(event.getImageUrl());
         dto.setCategory(event.getCategory());
-        dto.setStatus(event.getStatus());
-        dto.setOrganizerId(event.getOrganizer().getId());
+        dto.setCapacity(event.getCapacity());
         dto.setTotalTickets(event.getTotalTickets());
         dto.setSoldTickets(event.getSoldTickets());
-        dto.setRevenue(event.getRevenue());
+        dto.setStatus(event.getStatus().name());
+        if (event.getOrganizer() != null) {
+            dto.setOrganizerId(event.getOrganizer().getId());
+        }
         return dto;
     }
 } 

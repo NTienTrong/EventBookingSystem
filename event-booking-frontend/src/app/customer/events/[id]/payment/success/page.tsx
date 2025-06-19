@@ -25,31 +25,36 @@ export default function PaymentSuccessPage({ params }: { params: { id: string } 
       const parsedOrder = JSON.parse(storedOrder);
       setOrderData(parsedOrder);
 
-      // Clear current order from localStorage
-      localStorage.removeItem('currentOrder');
-
       // Auto redirect after 10 seconds
-      const timer = setTimeout(() => {
-        router.push('/customer/orders');
-      }, 10000);
+      // const timer = setTimeout(() => {
+      //   localStorage.removeItem('currentOrder');
+      //   router.push('/customer/orders');
+      // }, 10000);
 
-      return () => clearTimeout(timer);
+      // return () => clearTimeout(timer);
     } catch (error) {
       console.error('Error parsing order data:', error);
       router.push(`/customer/events/${params.id}/booking`);
     }
   }, [params.id, router]);
 
-  const handleDownloadTicket = () => {
-    if (!orderData) return;
-    // TODO: Implement ticket download
-    console.log('Downloading ticket for order:', orderData.orderId);
+  const handleGoToOrders = () => {
+    localStorage.removeItem('currentOrder');
+    router.push('/customer/orders');
   };
 
   if (!orderData) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <div className="bg-green-100 border border-green-300 text-green-800 px-6 py-4 rounded-lg text-xl font-semibold mb-6">
+          Thanh toán thành công! Cảm ơn bạn đã đặt vé.
+        </div>
+        <button
+          onClick={() => router.push('/customer/events')}
+          className="mt-4 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+        >
+          Về trang sự kiện
+        </button>
       </div>
     );
   }
@@ -74,32 +79,47 @@ export default function PaymentSuccessPage({ params }: { params: { id: string } 
           <div className="space-y-4">
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Mã đơn hàng:</span>
-              <span className="font-medium text-gray-900">#{orderData.orderId}</span>
+              <span className="font-medium text-gray-900">#{orderData.orderNumber || orderData.id}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Sự kiện:</span>
-              <span className="font-medium text-gray-900">{orderData.eventName}</span>
+              <span className="font-medium text-gray-900">{orderData.eventName || orderData.event_name || '-'}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Loại vé:</span>
-              <span className="font-medium text-gray-900">{orderData.ticketType}</span>
+              <span className="text-gray-500">Họ tên:</span>
+              <span className="font-medium text-gray-900">{orderData.customerName || orderData.customerFullName || orderData.customer_name || '-'}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Số lượng:</span>
-              <span className="font-medium text-gray-900">{orderData.quantity}</span>
+              <span className="text-gray-500">Email:</span>
+              <span className="font-medium text-gray-900">{orderData.customerEmail || orderData.customer_email || '-'}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Phương thức thanh toán:</span>
-              <span className="font-medium text-gray-900">{orderData.paymentMethod}</span>
+              <span className="font-medium text-gray-900">{orderData.paymentMethod || orderData.payment_method || '-'}</span>
             </div>
             <div className="border-t pt-4 mt-4">
-              <div className="flex justify-between font-medium">
+              <div className="font-medium mb-2">Chi tiết vé đã mua:</div>
+              <div className="space-y-2">
+                {orderData.orderItems && orderData.orderItems.length > 0 ? (
+                  orderData.orderItems.map((item: any, idx: number) => (
+                    <div key={item.id || idx} className="flex justify-between text-sm">
+                      <span>
+                        Loại vé: <b>{item.ticketTypeName || item.ticket_type_name}</b>
+                      </span>
+                      <span>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.subtotal)}</span>
+                    </div>
+                  ))
+                ) : (
+                  <span className="text-gray-500">Không có vé nào</span>
+                )}
+              </div>
+              <div className="flex justify-between font-bold mt-4">
                 <span>Tổng cộng:</span>
                 <span className="text-blue-600">
                   {new Intl.NumberFormat('vi-VN', {
                     style: 'currency',
                     currency: 'VND'
-                  }).format(orderData.amount)}
+                  }).format(Number(orderData.totalAmount) || 0)}
                 </span>
               </div>
             </div>
@@ -108,15 +128,8 @@ export default function PaymentSuccessPage({ params }: { params: { id: string } 
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Button
-            onClick={handleDownloadTicket}
-            className="flex items-center gap-2"
-          >
-            <Download className="h-4 w-4" />
-            Tải vé
-          </Button>
-          <Button
             variant="outline"
-            onClick={() => router.push('/customer/orders')}
+            onClick={handleGoToOrders}
             className="flex items-center gap-2"
           >
             Xem đơn hàng

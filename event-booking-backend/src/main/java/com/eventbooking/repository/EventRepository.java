@@ -10,8 +10,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import com.eventbooking.model.Event;
-import com.eventbooking.model.EventStatus;
+import com.eventbooking.entity.Event;
+import com.eventbooking.enums.EventStatus;
 
 @Repository
 public interface EventRepository extends JpaRepository<Event, Long> {
@@ -61,7 +61,7 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     );
     
     // Tìm kiếm theo tên, địa điểm và thể loại
-    @Query("SELECT e FROM Event e WHERE LOWER(e.name) LIKE LOWER(CONCAT('%', :keyword, '%')) AND LOWER(e.location) LIKE LOWER(CONCAT('%', :location, '%')) AND e.category = :category")
+    @Query("SELECT e FROM Event e WHERE LOWER(e.name) LIKE LOWER(CONCAT('%', :keyword, '%')) AND LOWER(e.location) LIKE LOWER(CONCAT('%', :location, '%')) AND LOWER(e.category) LIKE LOWER(CONCAT('%', :category, '%'))")
     List<Event> searchByNameLocationAndCategory(
         @Param("keyword") String keyword,
         @Param("location") String location,
@@ -70,5 +70,10 @@ public interface EventRepository extends JpaRepository<Event, Long> {
 
     List<Event> findByNameContainingIgnoreCase(String name);
     
-    List<Event> findByStatus(String status);
+    List<Event> findByNameContainingOrDescriptionContaining(String name, String description);
+    List<Event> findByStartTimeAfter(LocalDateTime startTime);
+    Page<Event> findAll(Pageable pageable);
+
+    @Query("SELECT e FROM Event e WHERE e.status = :status")
+    List<Event> findByStatus(@Param("status") String status);
 } 

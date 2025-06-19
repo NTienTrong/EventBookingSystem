@@ -4,6 +4,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 import com.eventbooking.dto.EventDTO;
 
 // Service Layer Pattern
@@ -34,4 +37,6 @@ public interface EventService {
     
     // Tìm kiếm theo tên, địa điểm và thể loại
     List<EventDTO> searchEventsByNameLocationAndCategory(String keyword, String location, String category);
+
+    Page<EventDTO> getEventsByPage(Pageable pageable);
 } 

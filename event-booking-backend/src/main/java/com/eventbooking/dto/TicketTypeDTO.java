@@ -1,76 +1,40 @@
 package com.eventbooking.dto;
 
-import lombok.Data;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Min;
+import lombok.Data;
 
 @Data
 public class TicketTypeDTO {
     private Long id;
-    private String name;
-    private BigDecimal price;
-    private Integer quantity;
-    private Integer remainingQuantity;
+
+    @NotNull(message = "Event ID is required")
     private Long eventId;
+
+    @NotBlank(message = "Ticket type name is required")
+    private String name;
+
     private String description;
-    private boolean active;
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    @Min(value = 0, message = "Price cannot be negative")
+    private BigDecimal price;
 
-    public String getName() {
-        return name;
-    }
+    @NotNull(message = "Quantity is required")
+    @Min(value = 0, message = "Quantity cannot be negative")
+    private Integer quantity;
 
-    public void setName(String name) {
-        this.name = name;
-    }
+    private Integer availableQuantity;
 
-    public BigDecimal getPrice() {
-        return price;
-    }
+    @NotNull(message = "Active status is required")
+    private Boolean active;
 
-    public void setPrice(BigDecimal price) {
-        this.price = price;
-    }
+    private LocalDateTime saleStartDate;
+    private LocalDateTime saleEndDate;
 
-    public Integer getQuantity() {
-        return quantity;
-    }
-
-    public void setQuantity(Integer quantity) {
-        this.quantity = quantity;
-    }
-
-    public Integer getRemainingQuantity() {
-        return remainingQuantity;
-    }
-
-    public void setRemainingQuantity(Integer remainingQuantity) {
-        this.remainingQuantity = remainingQuantity;
-    }
-
-    public Long getEventId() {
-        return eventId;
-    }
-
-    public void setEventId(Long eventId) {
-        this.eventId = eventId;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public boolean isActive() {
-        return active;
-    }
-
-    public void setActive(boolean active) {
-        this.active = active;
-    }
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 } 

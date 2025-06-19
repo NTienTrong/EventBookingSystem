@@ -1,34 +1,30 @@
 package com.eventbooking.dto;
 
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotNull;
-import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
+
+import com.eventbooking.enums.BookingStatus;
+import com.eventbooking.enums.PaymentStatus;
+
+import lombok.Data;
 
 @Data
 public class BookingDTO {
     private Long id;
-
-    @NotNull(message = "Event ID is required")
+    private String orderNumber;
     private Long eventId;
-
-    @NotNull(message = "User ID is required")
     private Long userId;
-
-    @NotNull(message = "Number of tickets is required")
-    @Min(value = 1, message = "Number of tickets must be at least 1")
     private Integer numberOfTickets;
-
-    @NotNull(message = "Total amount is required")
-    @Min(value = 0, message = "Total amount cannot be negative")
     private BigDecimal totalAmount;
-
-    private LocalDateTime bookingTime;
-    private String status;
-    private String paymentStatus;
+    private BookingStatus status;
+    private PaymentStatus paymentStatus;
     private String paymentMethod;
     private String transactionId;
+    private List<TicketDTO> tickets;
+    private LocalDateTime bookingTime;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
     // Getters
     public Long getId() { return id; }
@@ -36,11 +32,11 @@ public class BookingDTO {
     public Long getUserId() { return userId; }
     public Integer getNumberOfTickets() { return numberOfTickets; }
     public BigDecimal getTotalAmount() { return totalAmount; }
-    public LocalDateTime getBookingTime() { return bookingTime; }
-    public String getStatus() { return status; }
-    public String getPaymentStatus() { return paymentStatus; }
+    public BookingStatus getStatus() { return status; }
+    public PaymentStatus getPaymentStatus() { return paymentStatus; }
     public String getPaymentMethod() { return paymentMethod; }
     public String getTransactionId() { return transactionId; }
+    public LocalDateTime getBookingTime() { return bookingTime; }
 
     // Setters
     public void setId(Long id) { this.id = id; }
@@ -48,9 +44,9 @@ public class BookingDTO {
     public void setUserId(Long userId) { this.userId = userId; }
     public void setNumberOfTickets(Integer numberOfTickets) { this.numberOfTickets = numberOfTickets; }
     public void setTotalAmount(BigDecimal totalAmount) { this.totalAmount = totalAmount; }
-    public void setBookingTime(LocalDateTime bookingTime) { this.bookingTime = bookingTime; }
-    public void setStatus(String status) { this.status = status; }
-    public void setPaymentStatus(String paymentStatus) { this.paymentStatus = paymentStatus; }
+    public void setStatus(BookingStatus status) { this.status = status; }
+    public void setPaymentStatus(PaymentStatus paymentStatus) { this.paymentStatus = paymentStatus; }
     public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }
     public void setTransactionId(String transactionId) { this.transactionId = transactionId; }
+    public void setBookingTime(LocalDateTime bookingTime) { this.bookingTime = bookingTime; }
 } 

@@ -1,19 +1,19 @@
 export interface Event {
-  id?: number;
+  id: number;
   name: string;
   description: string;
   startTime: string;
   endTime: string;
   location: string;
   capacity: number;
-  price: number;
   imageUrl?: string;
   category?: string;
-  status: 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
+  status: 'DRAFT' | 'UPCOMING' | 'ONGOING' | 'COMPLETED' | 'CANCELLED';
   organizerId: number;
-  totalTickets?: number;
-  soldTickets?: number;
-  revenue?: number;
+  totalTickets: number;
+  soldTickets: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Ticket {
@@ -38,4 +38,40 @@ export interface EventFilter {
   status?: Event['status'];
   page?: number;
   limit?: number;
+}
+
+export interface EventDTO {
+  id: number;
+  name: string;
+  description: string;
+  startDate: string;
+  endDate: string;
+  location: string;
+  imageUrl: string;
+  capacity: number;
+  availableTickets: number;
+  status: 'UPCOMING' | 'ONGOING' | 'COMPLETED' | 'CANCELLED';
+  category: string;
+  organizer: {
+    id: number;
+    name: string;
+    email: string;
+    phoneNumber: string;
+  };
+  ticketTypes: TicketTypeDTO[];
+}
+
+export interface TicketTypeDTO {
+  id?: number;
+  eventId: number;
+  name: string;
+  description?: string;
+  price: number;
+  quantity: number;
+  availableQuantity?: number;
+  active: boolean;
+  saleStartDate?: string;
+  saleEndDate?: string;
+  createdAt?: string;
+  updatedAt?: string;
 } 

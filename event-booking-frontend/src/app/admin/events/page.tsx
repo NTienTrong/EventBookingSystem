@@ -26,11 +26,8 @@ export default function EventsManagementPage() {
   const loadEvents = async () => {
     setIsLoading(true);
     try {
-      const data = await eventApi.getAllEvents(
-        searchQuery || undefined,
-        filterStatus !== 'all' ? filterStatus : undefined
-      );
-      setEvents(data);
+      const response = await eventApi.getAllEvents();
+      setEvents(response.data);
     } catch (error) {
       console.error('Error loading events:', error);
       toast.error('Không thể tải danh sách sự kiện');
@@ -86,18 +83,28 @@ export default function EventsManagementPage() {
   };
 
   const statusStyles: Record<Event['status'], string> = {
-    upcoming: 'bg-yellow-100 text-yellow-800',
-    ongoing: 'bg-green-100 text-green-800',
-    completed: 'bg-gray-100 text-gray-800',
-    cancelled: 'bg-red-100 text-red-800',
+    DRAFT: 'bg-gray-100 text-gray-800',
+    UPCOMING: 'bg-yellow-100 text-yellow-800',
+    ONGOING: 'bg-green-100 text-green-800',
+    COMPLETED: 'bg-gray-100 text-gray-800',
+    CANCELLED: 'bg-red-100 text-red-800',
   };
 
   const statusLabels: Record<Event['status'], string> = {
-    upcoming: 'Sắp diễn ra',
-    ongoing: 'Đang diễn ra',
-    completed: 'Đã kết thúc',
-    cancelled: 'Đã hủy',
+    DRAFT: 'Bản nháp',
+    UPCOMING: 'Sắp diễn ra',
+    ONGOING: 'Đang diễn ra',
+    COMPLETED: 'Đã kết thúc',
+    CANCELLED: 'Đã hủy',
   };
+
+  const statusOptions = [
+    { value: 'all', label: 'Tất cả' },
+    { value: 'UPCOMING', label: 'Sắp diễn ra' },
+    { value: 'ONGOING', label: 'Đang diễn ra' },
+    { value: 'COMPLETED', label: 'Đã kết thúc' },
+    { value: 'CANCELLED', label: 'Đã hủy' }
+  ];
 
   return (
     <div className="space-y-6">
@@ -142,11 +149,11 @@ export default function EventsManagementPage() {
               onChange={(e) => setFilterStatus(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
-              <option value="all">Tất cả trạng thái</option>
-              <option value="upcoming">Sắp diễn ra</option>
-              <option value="ongoing">Đang diễn ra</option>
-              <option value="completed">Đã kết thúc</option>
-              <option value="cancelled">Đã hủy</option>
+              {statusOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
             </select>
           </div>
         </div>

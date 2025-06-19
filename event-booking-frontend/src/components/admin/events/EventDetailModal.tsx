@@ -16,17 +16,19 @@ export function EventDetailModal({ isOpen, onClose, event, onReload }: EventDeta
   if (!event) return null;
 
   const statusStyles: Record<Event['status'], string> = {
-    upcoming: 'bg-yellow-100 text-yellow-800',
-    ongoing: 'bg-green-100 text-green-800',
-    completed: 'bg-gray-100 text-gray-800',
-    cancelled: 'bg-red-100 text-red-800',
+    DRAFT: 'bg-gray-100 text-gray-800',
+    UPCOMING: 'bg-yellow-100 text-yellow-800',
+    ONGOING: 'bg-green-100 text-green-800',
+    COMPLETED: 'bg-gray-100 text-gray-800',
+    CANCELLED: 'bg-red-100 text-red-800',
   };
 
   const statusLabels: Record<Event['status'], string> = {
-    upcoming: 'Sắp diễn ra',
-    ongoing: 'Đang diễn ra',
-    completed: 'Đã kết thúc',
-    cancelled: 'Đã hủy',
+    DRAFT: 'Bản nháp',
+    UPCOMING: 'Sắp diễn ra',
+    ONGOING: 'Đang diễn ra',
+    COMPLETED: 'Đã kết thúc',
+    CANCELLED: 'Đã hủy',
   };
 
   return (
@@ -81,7 +83,7 @@ export function EventDetailModal({ isOpen, onClose, event, onReload }: EventDeta
             <div>
               <h4 className="text-sm font-medium text-gray-700">Thời gian</h4>
               <p className="mt-1 text-gray-600">
-                {new Date(event.startTime).toLocaleString('vi-VN')} - {new Date(event.endTime).toLocaleString('vi-VN')}
+                {event.startTime ? new Date(event.startTime).toLocaleString('vi-VN') : 'N/A'} - {event.endTime ? new Date(event.endTime).toLocaleString('vi-VN') : 'N/A'}
               </p>
             </div>
           </div>
@@ -99,24 +101,12 @@ export function EventDetailModal({ isOpen, onClose, event, onReload }: EventDeta
               <h4 className="text-sm font-medium text-gray-700">Sức chứa</h4>
               <p className="mt-1 text-gray-600">{event.capacity} người</p>
             </div>
-
-            <div>
-              <h4 className="text-sm font-medium text-gray-700">Giá vé</h4>
-              <p className="mt-1 text-gray-600">{event.price.toLocaleString('vi-VN')} VNĐ</p>
-            </div>
-
             <div>
               <h4 className="text-sm font-medium text-gray-700">Vé đã bán</h4>
               <p className="mt-1 text-gray-600">
                 {event.soldTickets}/{event.totalTickets} vé
               </p>
             </div>
-
-            <div>
-              <h4 className="text-sm font-medium text-gray-700">Doanh thu</h4>
-              <p className="mt-1 text-gray-600">{(event.revenue ?? 0).toLocaleString('vi-VN')} VNĐ</p>
-            </div>
-
             <div>
               <h4 className="text-sm font-medium text-gray-700">Người tổ chức</h4>
               <p className="mt-1 text-gray-600">ID: {event.organizerId}</p>

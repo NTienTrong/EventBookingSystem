@@ -46,30 +46,6 @@ export default function Header() {
             </span>
           </Link>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-8">
-            <Link
-              href="events"
-              className="text-gray-600 hover:text-blue-600 transition-colors"
-            >
-              Sự kiện
-            </Link>
-          </nav>
-
-          {/* Search Bar */}
-          <form onSubmit={handleSearch} className="hidden md:block flex-1 max-w-lg mx-8">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Tìm kiếm sự kiện..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-              <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-            </div>
-          </form>
-
           {/* User Menu */}
           <div className="hidden md:flex items-center space-x-4">
             <Link href="/auth/login">
@@ -110,12 +86,6 @@ export default function Header() {
                 <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
               </div>
             </form>
-            <Link
-              href="/events"
-              className="block px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-gray-50 rounded-md"
-            >
-              Sự kiện
-            </Link>
             <Link
               href="/auth/login"
               className="block px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-gray-50 rounded-md"

@@ -1,5 +1,5 @@
-import { User, UserFilter } from '@/types/user';
-import { api } from './api';
+import { User, UserFilter, ChangePasswordRequest } from '@/types/user';
+import api from './api';
 
 export const usersApi = {
   // Lấy danh sách người dùng (Admin)
@@ -39,11 +39,18 @@ export const usersApi = {
   },
 
   // Đổi mật khẩu
-  changePassword: async (id: string, data: {
-    currentPassword: string;
-    newPassword: string;
-  }) => {
+  changePassword: async (id: string, data: ChangePasswordRequest) => {
     const response = await api.post(`/users/${id}/change-password`, data);
+    return response.data;
+  },
+
+  // Cập nhật trạng thái người dùng
+  updateUserStatus: async (id: string, isActive: boolean) => 
+    api.put<User>(`/users/${id}/status`, { active: isActive }).then(res => res.data),
+
+  // Cập nhật thông tin cá nhân
+  updateProfile: async (id: string, data: { fullName: string; phoneNumber: string; address?: string }) => {
+    const response = await api.put(`/users/${id}/profile`, data);
     return response.data;
   },
 }; 

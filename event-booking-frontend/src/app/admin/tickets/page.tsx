@@ -1,315 +1,245 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { ticketApi } from '@/api/ticket';
+import { TicketType } from '@/types/ticket';
 import { Button } from '@/components/common';
-import { Ticket, TicketType } from '@/types/ticket';
-import { ticketApi } from '@/services/api/ticket';
-import TicketTypeModal from '@/components/admin/tickets/TicketTypeModal';
-import TicketModal from '@/components/admin/tickets/TicketModal';
-import TicketDetailModal from '@/components/admin/tickets/TicketDetailModal';
-import { PlusIcon, PencilIcon, TrashIcon, EyeIcon } from '@heroicons/react/24/outline';
+import { Input } from '@/components/common';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/common';
+import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
+import { Plus, Search, Edit, Trash2, Eye } from 'lucide-react';
+import TicketTypeModal from '@/components/admin/tickets/TicketTypeModal';
+import TicketTypeDetailModal from '@/components/admin/tickets/TicketTypeDetailModal';
+import { toast } from 'react-hot-toast';
+import { eventApi } from '@/api/event';
+import ConfirmModal from '@/components/common/ConfirmModal';
+import { Event } from '@/types/event';
 
-export default function TicketsPage() {
-  const [tickets, setTickets] = useState<Ticket[]>([]);
+export default function AdminTicketsPage() {
   const [ticketTypes, setTicketTypes] = useState<TicketType[]>([]);
-  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedTicketType, setSelectedTicketType] = useState<TicketType | null>(null);
-  const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
-  const [isTicketTypeModalOpen, setIsTicketTypeModalOpen] = useState(false);
-  const [isTicketDetailModalOpen, setIsTicketDetailModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
+  const [events, setEvents] = useState<Event[]>([]);
+  const [selectedEventId, setSelectedEventId] = useState('');
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const loadTicketTypes = async () => {
+    try {
+      setLoading(true);
+      const response = await ticketApi.getAllTicketTypes();
+      setTicketTypes(response.data);
+    } catch (error) {
+      console.error('Failed to load ticket types:', error);
+      toast.error('Không thể tải danh sách loại vé');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    loadData();
+    loadTicketTypes();
+    eventApi.getAllEvents().then(res => setEvents(res.data)).catch(() => toast.error('Không thể tải danh sách sự kiện'));
   }, []);
 
-  const loadData = async () => {
+  const handleCreate = () => {
+    setSelectedTicketType(null);
+    setModalMode('create');
+    setIsModalOpen(true);
+  };
+
+  const handleEdit = (ticketType: TicketType) => {
+    setSelectedTicketType(ticketType);
+    setModalMode('edit');
+    setIsModalOpen(true);
+  };
+
+  const handleView = (ticketType: TicketType) => {
+    setSelectedTicketType(ticketType);
+    setIsDetailModalOpen(true);
+  };
+
+  const handleDelete = (id: string) => {
+    setDeleteId(id);
+    setIsConfirmOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteId) return;
     try {
-      const [ticketsData, ticketTypesData] = await Promise.all([
-        ticketApi.getAllTickets(),
-        ticketApi.getAllTicketTypes()
-      ]);
-      setTickets(ticketsData);
-      setTicketTypes(ticketTypesData);
+      await ticketApi.deleteTicketType(deleteId);
+      toast.success('Xóa loại vé thành công');
+      loadTicketTypes();
     } catch (error) {
-      console.error('Error loading data:', error);
+      toast.error('Không thể xóa loại vé');
+    } finally {
+      setIsConfirmOpen(false);
+      setDeleteId(null);
     }
   };
 
-  const handleCreateTicket = async (data: Partial<Ticket>) => {
+  const handleSubmit = async (data: Partial<TicketType>) => {
     try {
-      await ticketApi.createTicket(data);
-      setIsTicketModalOpen(false);
-      loadData();
+      if (modalMode === 'create') {
+        await ticketApi.createTicketType(data);
+      } else if (selectedTicketType?.id) {
+        await ticketApi.updateTicketType(selectedTicketType.id.toString(), {
+          ...data,
+          availableQuantity: data.availableQuantity ?? selectedTicketType.availableQuantity
+        });
+      }
+      setIsModalOpen(false);
+      loadTicketTypes();
     } catch (error) {
-      console.error('Error creating ticket:', error);
+      console.error('Failed to save ticket type:', error);
+      toast.error('Không thể lưu loại vé');
     }
   };
 
-  const handleUpdateTicket = async (data: Partial<Ticket>) => {
-    if (!selectedTicket) return;
-    try {
-      await ticketApi.updateTicket(selectedTicket.id, data);
-      setIsTicketModalOpen(false);
-      loadData();
-    } catch (error) {
-      console.error('Error updating ticket:', error);
-    }
-  };
-
-  const handleDeleteTicket = async (id: number) => {
-    if (!confirm('Bạn có chắc chắn muốn xóa vé này?')) return;
-    try {
-      await ticketApi.deleteTicket(id);
-      loadData();
-    } catch (error) {
-      console.error('Error deleting ticket:', error);
-    }
-  };
-
-  const handleCreateTicketType = async (data: Partial<TicketType>) => {
-    try {
-      await ticketApi.createTicketType(data);
-      setIsTicketTypeModalOpen(false);
-      loadData();
-    } catch (error) {
-      console.error('Error creating ticket type:', error);
-    }
-  };
-
-  const handleUpdateTicketType = async (data: Partial<TicketType>) => {
-    if (!selectedTicketType) return;
-    try {
-      await ticketApi.updateTicketType(selectedTicketType.id, data);
-      setIsTicketTypeModalOpen(false);
-      loadData();
-    } catch (error) {
-      console.error('Error updating ticket type:', error);
-    }
-  };
-
-  const handleDeleteTicketType = async (id: number) => {
-    if (!confirm('Bạn có chắc chắn muốn xóa loại vé này?')) return;
-    try {
-      await ticketApi.deleteTicketType(id);
-      loadData();
-    } catch (error) {
-      console.error('Error deleting ticket type:', error);
-    }
-  };
-
-  const openTicketModal = (mode: 'create' | 'edit', ticket?: Ticket) => {
-    setModalMode(mode);
-    setSelectedTicket(ticket || null);
-    setIsTicketModalOpen(true);
-  };
-
-  const openTicketTypeModal = (mode: 'create' | 'edit', ticketType?: TicketType) => {
-    setModalMode(mode);
-    setSelectedTicketType(ticketType || null);
-    setIsTicketTypeModalOpen(true);
-  };
-
-  const statusStyles: Record<Ticket['status'], string> = {
-    ACTIVE: 'bg-green-100 text-green-800',
-    USED: 'bg-gray-100 text-gray-800',
-    CANCELLED: 'bg-red-100 text-red-800',
-  };
-
-  const statusLabels: Record<Ticket['status'], string> = {
-    ACTIVE: 'Còn hiệu lực',
-    USED: 'Đã sử dụng',
-    CANCELLED: 'Đã hủy',
-  };
+  const filteredTicketTypes = ticketTypes.filter(type =>
+    (searchTerm === '' || type.name.toLowerCase().includes(searchTerm.toLowerCase()) || type.description?.toLowerCase().includes(searchTerm.toLowerCase())) &&
+    (selectedEventId === '' || type.eventId === Number(selectedEventId))
+  );
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-2xl font-bold">Quản lý vé</h1>
-        <div className="space-x-4">
-          <Button onClick={() => openTicketTypeModal('create')}>
-            <PlusIcon className="h-5 w-5 mr-2" />
-            Thêm loại vé
-          </Button>
-          <Button onClick={() => openTicketModal('create')}>
-            <PlusIcon className="h-5 w-5 mr-2" />
-            Thêm vé
-          </Button>
-        </div>
+    <div className="container mx-auto py-6 space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Quản lý loại vé</h1>
+        <Button onClick={handleCreate} className="flex items-center gap-2">
+          <Plus className="w-4 h-4" />
+          Thêm loại vé
+        </Button>
       </div>
 
-      {/* Ticket Types Section */}
-      <div className="mb-8">
-        <h2 className="text-xl font-semibold mb-4">Loại vé</h2>
-        <div className="bg-white shadow rounded-lg overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Tên
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Mô tả
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Giá
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Số lượng
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Thao tác
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {ticketTypes.map((type) => (
-                <tr key={type.id}>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{type.name}</div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm text-gray-500">{type.description}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">
-                      {new Intl.NumberFormat('vi-VN', {
-                        style: 'currency',
-                        currency: 'VND'
-                      }).format(type.price)}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{type.quantity}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button
-                      onClick={() => openTicketTypeModal('edit', type)}
-                      className="text-indigo-600 hover:text-indigo-900 mr-4"
-                    >
-                      <PencilIcon className="h-5 w-5" />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteTicketType(type.id)}
-                      className="text-red-600 hover:text-red-900"
-                    >
-                      <TrashIcon className="h-5 w-5" />
-                    </button>
-                  </td>
-                </tr>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                placeholder="Tìm kiếm loại vé..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <select
+              className="h-10 rounded-md border px-3 py-2 text-sm"
+              value={selectedEventId}
+              onChange={e => setSelectedEventId(e.target.value)}
+            >
+              <option value="">Tất cả sự kiện</option>
+              {events.map(event => (
+                <option key={event.id} value={event.id}>{event.name}</option>
               ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+            </select>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="text-center py-4">Đang tải...</div>
+          ) : filteredTicketTypes.length === 0 ? (
+            <div className="text-center py-4 text-gray-500">
+              {searchTerm ? 'Không tìm thấy loại vé nào' : 'Chưa có loại vé nào'}
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {filteredTicketTypes.map((type) => {
+                const eventName = events.find(e => e.id === type.eventId)?.name || 'Không xác định';
+                return (
+                  <Card key={type.id} className="hover:shadow-md transition-shadow">
+                    <CardContent className="p-6">
+                      <div className="flex justify-between items-start">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-lg font-semibold">{type.name}</h3>
+                            <Badge variant={type.active ? "success" : "destructive"}>
+                              {type.active ? 'Đang bán' : 'Ngừng bán'}
+                            </Badge>
+                          </div>
+                          <div className="text-sm text-gray-700 font-medium">Sự kiện: {eventName}</div>
+                          <p className="text-gray-600">{type.description}</p>
+                          <div className="flex items-center gap-4 text-sm text-gray-500">
+                            <span>{(type.price ?? 0).toLocaleString('vi-VN')} VNĐ</span>
+                            <span>•</span>
+                            <span>{type.quantity} vé</span>
+                            <span>•</span>
+                            <span>Còn lại: {type.availableQuantity ?? 0} vé</span>
+                          </div>
+                          <div className="flex items-center gap-4 text-sm text-gray-500">
+                            <span>
+                              Bắt đầu: {type.saleStartDate ? format(new Date(type.saleStartDate), 'dd/MM/yyyy', { locale: vi }) : 'Chưa có'}
+                            </span>
+                            <span>•</span>
+                            <span>
+                              Kết thúc: {type.saleEndDate ? format(new Date(type.saleEndDate), 'dd/MM/yyyy', { locale: vi }) : 'Chưa có'}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleView({...type, eventName} as TicketType & { eventName?: string })}
+                            className="text-blue-600 hover:text-blue-700"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEdit(type)}
+                            className="text-yellow-600 hover:text-yellow-700"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDelete(type.id?.toString() || '')}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-      {/* Tickets Section */}
-      <div>
-        <h2 className="text-xl font-semibold mb-4">Danh sách vé</h2>
-        <div className="bg-white shadow rounded-lg overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Mã vé
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Sự kiện
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Người mua
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Trạng thái
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Ngày phát hành
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Thao tác
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {tickets.map((ticket) => (
-                <tr key={ticket.id}>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{ticket.ticketCode}</div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm text-gray-900">{ticket.event?.name}</div>
-                    <div className="text-sm text-gray-500">
-                      {format(new Date(ticket.event?.startTime || ''), 'dd/MM/yyyy', { locale: vi })}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm text-gray-900">{ticket.user?.fullName}</div>
-                    <div className="text-sm text-gray-500">{ticket.user?.email}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${statusStyles[ticket.status]}`}>
-                      {statusLabels[ticket.status]}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">
-                      {format(new Date(ticket.issuedAt), 'dd/MM/yyyy', { locale: vi })}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button
-                      onClick={() => {
-                        setSelectedTicket(ticket);
-                        setIsTicketDetailModalOpen(true);
-                      }}
-                      className="text-indigo-600 hover:text-indigo-900 mr-4"
-                    >
-                      <EyeIcon className="h-5 w-5" />
-                    </button>
-                    <button
-                      onClick={() => openTicketModal('edit', ticket)}
-                      className="text-indigo-600 hover:text-indigo-900 mr-4"
-                    >
-                      <PencilIcon className="h-5 w-5" />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteTicket(ticket.id)}
-                      className="text-red-600 hover:text-red-900"
-                    >
-                      <TrashIcon className="h-5 w-5" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Modals */}
       <TicketTypeModal
-        isOpen={isTicketTypeModalOpen}
-        onClose={() => setIsTicketTypeModalOpen(false)}
-        onSubmit={modalMode === 'create' ? handleCreateTicketType : handleUpdateTicketType}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleSubmit}
         ticketType={selectedTicketType || undefined}
         mode={modalMode}
       />
 
-      <TicketModal
-        isOpen={isTicketModalOpen}
-        onClose={() => setIsTicketModalOpen(false)}
-        onSubmit={modalMode === 'create' ? handleCreateTicket : handleUpdateTicket}
-        ticket={selectedTicket || undefined}
-        mode={modalMode}
-      />
+      {selectedTicketType && (
+        <TicketTypeDetailModal
+          isOpen={isDetailModalOpen}
+          onClose={() => setIsDetailModalOpen(false)}
+          ticketType={selectedTicketType ? { ...selectedTicketType, eventName: events.find(e => e.id === selectedTicketType.eventId)?.name || '' } as TicketType & { eventName?: string } : null}
+        />
+      )}
 
-      <TicketDetailModal
-        isOpen={isTicketDetailModalOpen}
-        onClose={() => setIsTicketDetailModalOpen(false)}
-        ticket={selectedTicket}
-        onReload={loadData}
+      <ConfirmModal
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        onConfirm={confirmDelete}
+        title="Xác nhận xóa"
+        message="Bạn có chắc chắn muốn xóa loại vé này?"
       />
     </div>
   );

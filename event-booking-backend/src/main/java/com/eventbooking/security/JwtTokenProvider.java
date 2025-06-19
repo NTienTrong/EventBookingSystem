@@ -1,10 +1,15 @@
 package com.eventbooking.security;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import javax.crypto.SecretKey;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -21,6 +26,8 @@ import io.jsonwebtoken.security.SignatureException;
 @Component
 public class JwtTokenProvider {
 
+    private static final Logger logger = LoggerFactory.getLogger(JwtTokenProvider.class);
+
     @Value("${app.jwtSecret}")
     private String jwtSecret;
 
@@ -36,12 +43,22 @@ public class JwtTokenProvider {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + jwtExpirationInMs);
 
-        return Jwts.builder()
+        List<String> roles = userDetails.getAuthorities().stream()
+                .map(authority -> authority.getAuthority())
+                .collect(Collectors.toList());
+
+        logger.debug("Generating token for user: {} with roles: {}", userDetails.getUsername(), roles);
+
+        String token = Jwts.builder()
                 .setSubject(userDetails.getUsername())
+                .claim("roles", roles)
                 .setIssuedAt(new Date())
                 .setExpiration(expiryDate)
                 .signWith(getSigningKey())
                 .compact();
+                
+        logger.debug("Generated token: {}", token);
+        return token;
     }
 
     public String getUsernameFromJWT(String token) {
@@ -51,30 +68,34 @@ public class JwtTokenProvider {
                 .parseClaimsJws(token)
                 .getBody();
 
-        return claims.getSubject();
+        String username = claims.getSubject();
+        logger.debug("Username from JWT: {}", username);
+        return username;
     }
 
-    public boolean validateToken(String authToken) {
+    public List<String> getRolesFromJWT(String token) {
+        Claims claims = Jwts.parserBuilder()
+                .setSigningKey(getSigningKey())
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+
+        @SuppressWarnings("unchecked")
+        List<String> roles = claims.get("roles", List.class);
+        logger.debug("Roles from JWT: {}", roles);
+        return roles;
+    }
+
+    public boolean validateToken(String token) {
         try {
             Jwts.parserBuilder()
                 .setSigningKey(getSigningKey())
                 .build()
-                .parseClaimsJws(authToken);
+                .parseClaimsJws(token);
+            logger.debug("Token is valid");
             return true;
-        } catch (SignatureException ex) {
-            // Invalid JWT signature
-            return false;
-        } catch (MalformedJwtException ex) {
-            // Invalid JWT token
-            return false;
-        } catch (ExpiredJwtException ex) {
-            // Expired JWT token
-            return false;
-        } catch (UnsupportedJwtException ex) {
-            // Unsupported JWT token
-            return false;
-        } catch (IllegalArgumentException ex) {
-            // JWT claims string is empty
+        } catch (Exception e) {
+            logger.error("Invalid JWT token: {}", e.getMessage());
             return false;
         }
     }

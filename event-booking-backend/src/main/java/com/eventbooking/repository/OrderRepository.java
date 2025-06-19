@@ -1,8 +1,9 @@
 package com.eventbooking.repository;
 
-import com.eventbooking.model.Order;
-import com.eventbooking.model.OrderStatus;
-import com.eventbooking.model.PaymentStatus;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -10,27 +11,35 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
+import com.eventbooking.entity.Order;
+import com.eventbooking.enums.OrderStatus;
+import com.eventbooking.enums.PaymentStatus;
 
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {
+    Page<Order> findAll(Pageable pageable);
+    List<Order> findByStatus(OrderStatus status);
+    List<Order> findByUserId(Long userId);
+    List<Order> findByOrderItemsTicketTypeEventId(Long eventId);
+
+    @Query("SELECT o FROM Order o LEFT JOIN FETCH o.orderItems oi LEFT JOIN FETCH oi.ticketType tt LEFT JOIN FETCH tt.event WHERE o.id = :id")
+    Optional<Order> findByIdWithDetails(@Param("id") Long id);
+
     Optional<Order> findByOrderNumber(String orderNumber);
-    
-    Page<Order> findByCustomerId(Long customerId, Pageable pageable);
-    
-    @Query("SELECT o FROM Order o WHERE o.customer.id = :customerId AND o.status = :status")
-    Page<Order> findByCustomerIdAndStatus(@Param("customerId") Long customerId, 
-                                        @Param("status") OrderStatus status, 
-                                        Pageable pageable);
-    
-    @Query("SELECT o FROM Order o WHERE o.status = :orderStatus AND o.paymentStatus = :paymentStatus")
-    List<Order> findByOrderStatusAndPaymentStatus(@Param("orderStatus") OrderStatus orderStatus,
-                                                @Param("paymentStatus") PaymentStatus paymentStatus);
-    
-    @Query("SELECT o FROM Order o WHERE o.createdAt BETWEEN :startDate AND :endDate")
-    Page<Order> findByDateRange(@Param("startDate") LocalDateTime startDate,
-                               @Param("endDate") LocalDateTime endDate,
-                               Pageable pageable);
+
+    @Query("SELECT o FROM Order o WHERE " +
+           "(:search IS NULL OR LOWER(o.orderNumber) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(o.customerEmail) LIKE LOWER(CONCAT('%', :search, '%'))) AND " +
+           "(:status IS NULL OR o.status = :status) AND " +
+           "(:paymentStatus IS NULL OR o.paymentStatus = :paymentStatus) AND " +
+           "(:startDate IS NULL OR o.createdAt >= :startDate) AND " +
+           "(:endDate IS NULL OR o.createdAt <= :endDate)")
+    Page<Order> searchOrders(
+        @Param("search") String search,
+        @Param("status") OrderStatus status,
+        @Param("paymentStatus") PaymentStatus paymentStatus,
+        @Param("startDate") LocalDateTime startDate,
+        @Param("endDate") LocalDateTime endDate,
+        Pageable pageable
+    );
 } 

@@ -1,8 +1,8 @@
 // src/components/layout/MainLayout.tsx
 import React from 'react';
-import { Header } from './Header';
+import Header from './Header';
 import { Navbar } from './Navbar';
-import { Footer } from './Footer';
+import Footer from './Footer';
 
 interface MainLayoutProps {
   children: React.ReactNode;

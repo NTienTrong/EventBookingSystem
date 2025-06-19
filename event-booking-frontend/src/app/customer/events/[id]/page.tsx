@@ -53,46 +53,12 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
   useEffect(() => {
     const fetchEventDetails = async () => {
       try {
-        // TODO: Replace with actual API call
-        // Simulated data
-        const fakeEvent: Event = {
-          id: params.id,
-          name: 'Hội thảo Công nghệ 2024',
-          description: 'Hội thảo về các xu hướng công nghệ mới nhất trong năm 2024. Sự kiện sẽ tập trung vào các chủ đề như AI, Blockchain, Cloud Computing và nhiều công nghệ mới nổi khác.',
-          startTime: '2024-03-15T09:00:00',
-          endTime: '2024-03-15T17:00:00',
-          location: 'Hà Nội',
-          category: 'Công nghệ',
-          price: 500000,
-          remainingTickets: 50,
-          totalTickets: 100,
-          imageUrl: '/images/event1.jpg',
-          organizer: {
-            name: 'Công ty ABC',
-            email: 'contact@abc.com',
-            phone: '0123456789',
-          },
-          ticketTypes: [
-            {
-              id: '1',
-              name: 'Vé thường',
-              price: 500000,
-              remaining: 30,
-              total: 50,
-            },
-            {
-              id: '2',
-              name: 'Vé VIP',
-              price: 1000000,
-              remaining: 20,
-              total: 30,
-            },
-          ],
-        };
-
-        setEvent(fakeEvent);
-        if (fakeEvent.ticketTypes.length > 0) {
-          setSelectedTicketType(fakeEvent.ticketTypes[0].id);
+        const res = await fetch(`/api/events/${params.id}`);
+        if (!res.ok) throw new Error('Không tìm thấy sự kiện');
+        const data = await res.json();
+        setEvent(data);
+        if (data.ticketTypes && data.ticketTypes.length > 0) {
+          setSelectedTicketType(data.ticketTypes[0].id);
         }
       } catch (error) {
         console.error('Error fetching event details:', error);
@@ -100,7 +66,6 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
         setLoading(false);
       }
     };
-
     fetchEventDetails();
   }, [params.id]);
 

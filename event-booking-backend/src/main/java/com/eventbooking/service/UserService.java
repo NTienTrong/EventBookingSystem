@@ -2,19 +2,19 @@ package com.eventbooking.service;
 
 import java.util.List;
 
-import com.eventbooking.dto.UserDTO;
+import com.eventbooking.dto.UpdateProfileRequest;
+import com.eventbooking.entity.User;
 
 // Service Layer Pattern
 public interface UserService {
-    UserDTO createUser(UserDTO userDTO);
-    UserDTO updateUser(Long id, UserDTO userDTO);
+    User createUser(User user);
+    User updateUser(Long id, User user);
+    User getUserById(Long id);
+    List<User> getAllUsers();
+    User getUserByUsername(String username);
+    User findByEmail(String email);
+    User updateProfile(Long id, UpdateProfileRequest request);
+    void changePassword(Long id, String currentPassword, String newPassword);
     void deleteUser(Long id);
-    UserDTO getUserById(Long id);
-    UserDTO findByEmail(String email);
-    UserDTO findByUsername(String username);
-    UserDTO getUserByUsername(String username);
-    List<UserDTO> getAllUsers();
-    UserDTO updateUserStatus(Long id, boolean isActive);
-    void sendPasswordResetEmail(String email);
-    void resetPassword(String token, String newPassword);
+    void updateLastLoginAt(Long userId, java.time.LocalDateTime lastLoginAt);
 } 

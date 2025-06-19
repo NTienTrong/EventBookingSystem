@@ -4,8 +4,8 @@ export interface User {
   email: string;
   fullName: string;
   phoneNumber: string;
-  phone: string;
-  role: 'ADMIN' | 'USER';
+  address?: string;
+  role: 'ADMIN' | 'CUSTOMER';
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -42,5 +42,26 @@ export interface ForgotPasswordRequest {
 
 export interface ResetPasswordRequest {
   token: string;
+  newPassword: string;
+}
+
+export interface UserDTO {
+  id: number;
+  username: string;
+  email: string;
+  fullName: string;
+  phoneNumber: string;
+  address?: string;
+  role: 'ADMIN' | 'CUSTOMER';
+}
+
+export interface UpdateProfileRequest {
+  fullName: string;
+  phoneNumber: string;
+  address?: string;
+}
+
+export interface ChangePasswordRequest {
+  currentPassword: string;
   newPassword: string;
 } 

@@ -7,4 +7,6 @@ public class CreateTicketDTO {
     private Long orderItemId;
     private String ticketCode;
     private String qrCode;
+    private Long ticketTypeId;
+    private Long bookingId;
 } 

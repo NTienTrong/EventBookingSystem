@@ -1,0 +1,1 @@
+ALTER TABLE tickets MODIFY COLUMN order_item_id BIGINT NULL; 

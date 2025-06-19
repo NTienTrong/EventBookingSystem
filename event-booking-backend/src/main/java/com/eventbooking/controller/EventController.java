@@ -3,6 +3,8 @@ package com.eventbooking.controller;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -27,6 +29,8 @@ import com.eventbooking.service.EventService;
 @CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
 public class EventController {
 
+    private static final Logger logger = LoggerFactory.getLogger(EventController.class);
+
     @Autowired
     private EventService eventService;
 
@@ -35,11 +39,17 @@ public class EventController {
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String status) {
         try {
+            logger.info("Fetching events with search: {}, status: {}", search, status);
             List<EventDTO> events = eventService.getAllEvents(search, status);
             return ResponseEntity.ok(events);
         } catch (ResourceNotFoundException e) {
+            logger.error("Resource not found: {}", e.getMessage());
+            throw e;
+        } catch (BadRequestException e) {
+            logger.error("Bad request: {}", e.getMessage());
             throw e;
         } catch (Exception e) {
+            logger.error("Error fetching events", e);
             throw new InternalServerException("Error fetching events: " + e.getMessage());
         }
     }
@@ -59,16 +69,50 @@ public class EventController {
     @PostMapping
     public ResponseEntity<EventDTO> createEvent(@RequestBody EventDTO eventDTO) {
         try {
+            logger.info("Creating new event: {}", eventDTO.getName());
+            
             if (eventDTO.getOrganizerId() == null) {
+                logger.error("Organizer ID is missing");
                 throw new BadRequestException("Organizer ID is required");
             }
+
+            // Validate required fields
+            if (eventDTO.getName() == null || eventDTO.getName().trim().isEmpty()) {
+                logger.error("Event name is missing");
+                throw new BadRequestException("Event name is required");
+            }
+            if (eventDTO.getDescription() == null || eventDTO.getDescription().trim().isEmpty()) {
+                logger.error("Event description is missing");
+                throw new BadRequestException("Event description is required");
+            }
+            if (eventDTO.getStartTime() == null) {
+                logger.error("Event start time is missing");
+                throw new BadRequestException("Event start time is required");
+            }
+            if (eventDTO.getEndTime() == null) {
+                logger.error("Event end time is missing");
+                throw new BadRequestException("Event end time is required");
+            }
+            if (eventDTO.getLocation() == null || eventDTO.getLocation().trim().isEmpty()) {
+                logger.error("Event location is missing");
+                throw new BadRequestException("Event location is required");
+            }
+            if (eventDTO.getCapacity() == null || eventDTO.getCapacity() <= 0) {
+                logger.error("Invalid event capacity: {}", eventDTO.getCapacity());
+                throw new BadRequestException("Event capacity must be greater than 0");
+            }
+
             EventDTO createdEvent = eventService.createEvent(eventDTO);
+            logger.info("Successfully created event with ID: {}", createdEvent.getId());
             return ResponseEntity.ok(createdEvent);
         } catch (BadRequestException e) {
+            logger.error("Bad request while creating event: {}", e.getMessage());
             throw e;
         } catch (ResourceNotFoundException e) {
+            logger.error("Resource not found while creating event: {}", e.getMessage());
             throw e;
         } catch (Exception e) {
+            logger.error("Unexpected error while creating event", e);
             throw new InternalServerException("Error creating event: " + e.getMessage());
         }
     }

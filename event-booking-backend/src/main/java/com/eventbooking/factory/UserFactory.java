@@ -4,7 +4,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import com.eventbooking.dto.UserDTO;
-import com.eventbooking.model.User;
+import com.eventbooking.entity.User;
 
 // Factory Pattern: Tách biệt logic tạo đối tượng
 @Component
@@ -37,6 +37,7 @@ public class UserFactory {
         dto.setPhoneNumber(user.getPhoneNumber());
         dto.setAddress(user.getAddress());
         dto.setRole(user.getRole());
+        dto.setLastLoginAt(user.getLastLoginAt());
         return dto;
     }
 
@@ -61,6 +62,7 @@ public class UserFactory {
         dto.setPhoneNumber(user.getPhoneNumber());
         dto.setAddress(user.getAddress());
         dto.setRole(user.getRole());
+        dto.setLastLoginAt(user.getLastLoginAt());
         return dto;
     }
 } 

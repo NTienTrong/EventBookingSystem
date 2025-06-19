@@ -17,79 +17,52 @@ import {
 import { Button } from '@/components/common';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
+import { ordersApi } from '@/services/api/orders';
+import { useAuth } from '@/contexts/AuthContext';
+import { PaymentStatus } from '@/types/enums';
+
+interface OrderItem {
+  id: string;
+  ticketTypeName: string;
+  quantity: number;
+  unitPrice: number;
+  subtotal: number;
+  eventName: string;
+  eventImage: string;
+  eventDate: string;
+  eventLocation: string;
+}
 
 interface Order {
   id: string;
-  eventName: string;
-  eventImage: string;
-  ticketType: string;
-  quantity: number;
-  amount: number;
-  status: 'pending' | 'completed' | 'cancelled';
+  status: string;
   createdAt: string;
-  eventDate: string;
-  eventLocation: string;
   paymentMethod: string;
-  paymentStatus: 'pending' | 'completed' | 'failed';
-  customerName: string;
+  customerFullName: string;
   customerEmail: string;
   customerPhone: string;
-  tickets: {
-    id: string;
-    code: string;
-    status: 'active' | 'used' | 'cancelled';
-  }[];
+  orderItems: OrderItem[];
 }
 
 export default function OrderDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
+  const { user } = useAuth();
+  const [order, setOrder] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
-  const [order, setOrder] = useState<Order | null>(null);
 
   useEffect(() => {
-    const fetchOrderDetails = async () => {
+    const fetchOrder = async () => {
       try {
-        // TODO: Replace with actual API call
-        // Simulated data
-        const fakeOrder: Order = {
-          id: params.id,
-          eventName: 'Hội thảo Công nghệ 2024',
-          eventImage: '/images/event1.jpg',
-          ticketType: 'Vé thường',
-          quantity: 2,
-          amount: 1000000,
-          status: 'completed',
-          createdAt: '2024-03-10T10:00:00',
-          eventDate: '2024-03-15T09:00:00',
-          eventLocation: 'Hà Nội',
-          paymentMethod: 'VNPay',
-          paymentStatus: 'completed',
-          customerName: 'Nguyễn Văn A',
-          customerEmail: 'nguyenvana@example.com',
-          customerPhone: '0123456789',
-          tickets: [
-            {
-              id: '1',
-              code: 'EVENT-2024-001',
-              status: 'active',
-            },
-            {
-              id: '2',
-              code: 'EVENT-2024-002',
-              status: 'active',
-            },
-          ],
-        };
-
-        setOrder(fakeOrder);
+        if (!params.id) return;
+        const order = await ordersApi.getOrderById(params.id);
+        setOrder(order);
       } catch (error) {
-        console.error('Error fetching order details:', error);
+        console.error('Error fetching order:', error);
       } finally {
         setLoading(false);
       }
     };
-
-    fetchOrderDetails();
+    fetchOrder();
   }, [params.id]);
 
   const handleDownloadTicket = (ticketId: string) => {
@@ -113,16 +86,16 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
     );
   }
 
-  const getStatusIcon = (status: string) => {
+  const getPaymentStatusIcon = (status: string) => {
     switch (status) {
-      case 'completed':
+      case 'COMPLETED':
         return <CheckCircle className="h-5 w-5 text-green-500" />;
-      case 'pending':
+      case 'PENDING':
         return <AlertCircle className="h-5 w-5 text-yellow-500" />;
-      case 'cancelled':
-        return <XCircle className="h-5 w-5 text-red-500" />;
+      case 'REFUNDED':
+        return <XCircle className="h-5 w-5 text-blue-500" />;
       default:
-        return null;
+        return <XCircle className="h-5 w-5 text-red-500" />;
     }
   };
 
@@ -148,14 +121,16 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
             </p>
           </div>
           <div className="flex items-center gap-2">
-            {getStatusIcon(order.status)}
+            {getPaymentStatusIcon(order.paymentStatus)}
             <span className={`text-sm font-medium
-              ${order.status === 'completed' ? 'text-green-600' :
-                order.status === 'pending' ? 'text-yellow-600' :
+              ${order.paymentStatus === 'COMPLETED' ? 'text-green-600' :
+                order.paymentStatus === 'PENDING' ? 'text-yellow-600' :
+                order.paymentStatus === 'REFUNDED' ? 'text-blue-600' :
                 'text-red-600'}`}>
-              {order.status === 'completed' ? 'Hoàn thành' :
-                order.status === 'pending' ? 'Đang xử lý' :
-                'Đã hủy'}
+              {order.paymentStatus === 'COMPLETED' ? 'Đã thanh toán' :
+                order.paymentStatus === 'PENDING' ? 'Chờ thanh toán' :
+                order.paymentStatus === 'REFUNDED' ? 'Đã hoàn tiền' :
+                'Thanh toán thất bại'}
             </span>
           </div>
         </div>
@@ -213,7 +188,7 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
             <h3 className="text-sm font-medium text-gray-500 mb-2">Thông tin khách hàng</h3>
             <div className="space-y-2">
               <p className="text-gray-900">
-                <span className="font-medium">Họ tên:</span> {order.customerName}
+                <span className="font-medium">Họ tên:</span> {order.customerFullName}
               </p>
               <p className="text-gray-900">
                 <span className="font-medium">Email:</span> {order.customerEmail}
@@ -230,54 +205,48 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
                 <span className="font-medium">Phương thức:</span> {order.paymentMethod}
               </p>
               <p className="text-gray-900">
-                <span className="font-medium">Trạng thái:</span>{' '}
-                <span className={`inline-flex items-center
-                  ${order.paymentStatus === 'completed' ? 'text-green-600' :
-                    order.paymentStatus === 'pending' ? 'text-yellow-600' :
-                    'text-red-600'}`}>
-                  {order.paymentStatus === 'completed' ? 'Đã thanh toán' :
-                    order.paymentStatus === 'pending' ? 'Đang xử lý' :
-                    'Thất bại'}
-                </span>
-              </p>
-              <p className="text-gray-900">
-                <span className="font-medium">Tổng tiền:</span>{' '}
-                {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(order.amount)}
+                <span className="font-medium">Ngày đặt:</span> {order.createdAt ? format(new Date(order.createdAt), 'dd/MM/yyyy HH:mm', { locale: vi }) : 'N/A'}
               </p>
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Tickets */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-lg font-bold text-gray-900 mb-4">Danh sách vé</h2>
-        <div className="space-y-4">
-          {order.tickets.map((ticket) => (
-            <div
-              key={ticket.id}
-              className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
-            >
-              <div>
-                <p className="font-medium text-gray-900">{ticket.code}</p>
-                <p className="text-sm text-gray-500">
-                  {ticket.status === 'active' ? 'Chưa sử dụng' :
-                    ticket.status === 'used' ? 'Đã sử dụng' :
-                    'Đã hủy'}
-                </p>
-              </div>
-              {ticket.status === 'active' && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleDownloadTicket(ticket.id)}
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  Tải vé
-                </Button>
-              )}
-            </div>
-          ))}
+        {/* Danh sách vé trong đơn hàng */}
+        <div className="mt-8">
+          <h2 className="text-lg font-bold text-gray-900 mb-4">Chi tiết vé</h2>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tên vé</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sự kiện</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ngày</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Địa điểm</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Số lượng</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Đơn giá</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Thành tiền</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {order.orderItems.map((item: any) => (
+                  <tr key={item.id}>
+                    <td className="px-6 py-4 whitespace-nowrap">{item.ticketTypeName}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">{item.eventName}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {item.eventDate ? format(new Date(item.eventDate), 'dd/MM/yyyy', { locale: vi }) : 'N/A'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">{item.eventLocation}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">{item.quantity}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.unitPrice)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.subtotal)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>

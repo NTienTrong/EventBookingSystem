@@ -1,7 +1,8 @@
 package com.eventbooking.observer;
 
-import com.eventbooking.model.Booking;
 import org.springframework.stereotype.Component;
+
+import com.eventbooking.entity.Booking;
 
 @Component
 public class LoggingObserver implements BookingObserver {
@@ -21,20 +22,14 @@ public class LoggingObserver implements BookingObserver {
     }
 
     private void logBookingCreation(Booking booking) {
-        System.out.println("Logging: New booking created - ID: " + booking.getId() + 
-                         ", User: " + booking.getUser().getUsername() + 
-                         ", Event: " + booking.getEvent().getName());
+        System.out.println("Logging: New booking created - ID: " + booking.getId());
     }
 
     private void logBookingCancellation(Booking booking) {
-        System.out.println("Logging: Booking cancelled - ID: " + booking.getId() + 
-                         ", User: " + booking.getUser().getUsername() + 
-                         ", Event: " + booking.getEvent().getName());
+        System.out.println("Logging: Booking cancelled - ID: " + booking.getId());
     }
 
     private void logPaymentReceived(Booking booking) {
-        System.out.println("Logging: Payment received - Booking ID: " + booking.getId() + 
-                         ", Amount: " + booking.getTotalAmount() + 
-                         ", Transaction ID: " + booking.getTransactionId());
+        System.out.println("Logging: Payment received - Booking ID: " + booking.getId());
     }
 } 

@@ -2,146 +2,112 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  Calendar,
-  MapPin,
-  Users,
-  CreditCard,
-  User,
-  Mail,
-  Phone,
-  ArrowLeft,
-} from 'lucide-react';
-import { Button } from '@/components/common';
+import { useParams } from 'next/navigation';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
+import { toast } from 'react-hot-toast';
+import { Button } from '@/components/common/Button';
+import { Input } from '@/components/common/Input';
+import { Event } from '@/types/event';
+import { TicketType } from '@/types/ticket';
+import { OrderRequest, OrderTicket } from '@/types/order';
+import { eventApi } from '@/api/event';
+import { ticketApi } from '@/api/ticket';
+import { orderApi } from '@/api/booking';
+import { customersApi } from '@/services/api/customers';
+import { UserDTO } from '@/types/user';
 
-interface TicketType {
-  id: string;
-  name: string;
-  price: number;
-  description: string;
-  remaining: number;
-}
-
-interface Event {
-  id: string;
-  name: string;
-  description: string;
-  startTime: string;
-  endTime: string;
-  location: string;
-  imageUrl: string;
-  ticketTypes: TicketType[];
-}
-
-export default function BookingPage({ params }: { params: { id: string } }) {
+export default function BookingPage() {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
+  const params = useParams();
+  const eventId = Number(params.id);
+
   const [event, setEvent] = useState<Event | null>(null);
-  const [selectedTicketType, setSelectedTicketType] = useState<string>('');
-  const [quantity, setQuantity] = useState(1);
-  const [formData, setFormData] = useState({
-    fullName: '',
-    email: '',
-    phone: '',
-  });
+  const [ticketTypes, setTicketTypes] = useState<TicketType[]>([]);
+  const [selectedTickets, setSelectedTickets] = useState<OrderTicket[]>([]);
+  const [userInfo, setUserInfo] = useState<UserDTO | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    const fetchEventDetails = async () => {
+    const fetchAll = async () => {
       try {
-        // TODO: Replace with actual API call
-        const fakeEvent: Event = {
-          id: params.id,
-          name: 'Hội thảo Công nghệ 2024',
-          description: 'Hội thảo về công nghệ mới nhất',
-          startTime: '2024-03-15T09:00:00',
-          endTime: '2024-03-15T17:00:00',
-          location: 'Hà Nội',
-          imageUrl: '/images/event1.jpg',
-          ticketTypes: [
-            {
-              id: '1',
-              name: 'Vé thường',
-              price: 500000,
-              description: 'Vé tham dự cơ bản',
-              remaining: 100,
-            },
-            {
-              id: '2',
-              name: 'Vé VIP',
-              price: 1000000,
-              description: 'Vé tham dự với nhiều quyền lợi',
-              remaining: 50,
-            },
-          ],
-        };
-
-        setEvent(fakeEvent);
-        if (fakeEvent.ticketTypes.length > 0) {
-          setSelectedTicketType(fakeEvent.ticketTypes[0].id);
-        }
+        setLoading(true);
+        const [eventResponse, ticketTypesResponse, user] = await Promise.all([
+          eventApi.getEventById(eventId),
+          ticketApi.getAllTicketTypes({ eventId }),
+          customersApi.getProfile()
+        ]);
+        setEvent(eventResponse.data);
+        setTicketTypes(ticketTypesResponse.data);
+        setUserInfo(user);
       } catch (error) {
-        console.error('Error fetching event details:', error);
+        console.error('Error fetching data:', error);
+        toast.error('Không thể tải thông tin sự kiện hoặc tài khoản');
       } finally {
         setLoading(false);
       }
     };
+    fetchAll();
+  }, [eventId]);
 
-    fetchEventDetails();
-  }, [params.id]);
-
-  const handleQuantityChange = (value: number) => {
-    if (value >= 1 && value <= 10) {
-      setQuantity(value);
-    }
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Validate form data
-    if (!selectedTicketType) {
-      alert('Vui lòng chọn loại vé');
-      return;
-    }
-
-    if (!formData.fullName || !formData.email || !formData.phone) {
-      alert('Vui lòng điền đầy đủ thông tin cá nhân');
-      return;
-    }
-
-    // Create order data
-    const selectedTicket = event?.ticketTypes.find(t => t.id === selectedTicketType);
-    if (!selectedTicket) return;
-
-    const orderData = {
-      eventId: params.id,
-      eventName: event?.name,
-      ticketType: selectedTicket.name,
-      quantity: quantity,
-      amount: selectedTicket.price * quantity,
-      customerInfo: {
-        fullName: formData.fullName,
-        email: formData.email,
-        phone: formData.phone,
+  const handleQuantityChange = (ticketTypeId: number, quantity: number) => {
+    setSelectedTickets(prev => {
+      const existing = prev.find(t => t.ticketTypeId === ticketTypeId);
+      if (existing) {
+        if (quantity === 0) {
+          return prev.filter(t => t.ticketTypeId !== ticketTypeId);
+        }
+        return prev.map(t => t.ticketTypeId === ticketTypeId ? { ...t, quantity } : t);
       }
-    };
-
-    // Store order data in localStorage for payment page
-    localStorage.setItem('currentOrder', JSON.stringify(orderData));
-
-    // Redirect to payment page
-    router.push(`/customer/events/${params.id}/payment`);
+      return [...prev, { ticketTypeId, quantity }];
+    });
   };
+
+  const calculateTotal = () => {
+    return selectedTickets.reduce((total, ticket) => {
+      const ticketType = ticketTypes.find(t => t.id === ticket.ticketTypeId);
+      return total + (ticketType?.price || 0) * ticket.quantity;
+    }, 0);
+  };
+
+  const handleBook = () => {
+    if (selectedTickets.length === 0) {
+      toast.error('Vui lòng chọn ít nhất một loại vé');
+      return;
+    }
+    if (!userInfo) {
+      toast.error('Không tìm thấy thông tin tài khoản');
+      return;
+    }
+    const totalAmount = calculateTotal();
+    const orderData: OrderRequest = {
+      eventId,
+      customerId: userInfo.id,
+      tickets: selectedTickets,
+      customerName: userInfo.fullName,
+      customerEmail: userInfo.email,
+      customerPhone: userInfo.phoneNumber,
+      totalAmount: Number(totalAmount),
+      paymentMethod: 'MB'
+    };
+    localStorage.setItem('orderData', JSON.stringify(orderData));
+    router.push(`/customer/events/${eventId}/payment`);
+  };
+
+  const safeDate = (dateStr?: string) => {
+    const d = dateStr ? new Date(dateStr) : null;
+    return d && !isNaN(d.getTime()) ? d : null;
+  };
+
+  if (loading || !userInfo) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <div className="mb-4">Đang tải thông tin tài khoản...</div>
+        <pre className="bg-gray-100 p-2 rounded text-xs text-left w-full max-w-xl overflow-x-auto">{JSON.stringify(userInfo, null, 2)}</pre>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -153,237 +119,113 @@ export default function BookingPage({ params }: { params: { id: string } }) {
 
   if (!event) {
     return (
-      <div className="text-center py-12">
-        <p className="text-gray-500">Không tìm thấy thông tin sự kiện.</p>
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-red-500">Không tìm thấy thông tin sự kiện</p>
       </div>
     );
   }
 
-  const selectedTicket = event.ticketTypes.find(t => t.id === selectedTicketType);
-  const totalAmount = selectedTicket ? selectedTicket.price * quantity : 0;
-
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
-      {/* Header */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <Button
-          variant="ghost"
-          onClick={() => router.back()}
-          className="mb-4"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Quay lại
-        </Button>
-        <h1 className="text-2xl font-bold text-gray-900">Đặt vé</h1>
-        <p className="text-gray-500 mt-1">Vui lòng điền thông tin để hoàn tất đặt vé</p>
-      </div>
+    <div className="container mx-auto px-4 py-8">
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-3xl font-bold mb-8">Đặt vé - {event.name}</h1>
 
-      {/* Event Info */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex items-start space-x-4">
-          <img
-            src={event.imageUrl}
-            alt={event.name}
-            className="w-24 h-24 rounded-lg object-cover"
-          />
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900">{event.name}</h2>
-            <div className="mt-2 space-y-1">
-              <div className="flex items-center text-sm text-gray-500">
-                <Calendar className="h-4 w-4 mr-2" />
-                {format(new Date(event.startTime), 'dd/MM/yyyy HH:mm', { locale: vi })}
-              </div>
-              <div className="flex items-center text-sm text-gray-500">
-                <MapPin className="h-4 w-4 mr-2" />
-                {event.location}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <img
+                src={event.imageUrl || '/images/event-default.jpg'}
+                alt={event.name}
+                className="w-full h-64 object-cover rounded-lg"
+              />
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold mb-4">{event.name}</h2>
+              <div className="space-y-2">
+                <p className="text-gray-600">
+                  <span className="font-medium">Thời gian:</span>{' '}
+                  {safeDate(event.startTime)
+                    ? format(safeDate(event.startTime)!, 'dd/MM/yyyy HH:mm', { locale: vi })
+                    : 'Chưa có'}
+                </p>
+                <p className="text-gray-600">
+                  <span className="font-medium">Địa điểm:</span> {event.location}
+                </p>
+                <p className="text-gray-600">
+                  <span className="font-medium">Mô tả:</span> {event.description}
+                </p>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Booking Form */}
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Ticket Selection */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Chọn vé</h2>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Loại vé
-              </label>
-              <div className="grid gap-4">
-                {event.ticketTypes.map((ticket) => (
-                  <div
-                    key={ticket.id}
-                    className={`border rounded-lg p-4 cursor-pointer transition-colors
-                      ${selectedTicketType === ticket.id
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 hover:border-blue-300'
-                      }`}
-                    onClick={() => setSelectedTicketType(ticket.id)}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-medium text-gray-900">{ticket.name}</h3>
-                        <p className="text-sm text-gray-500 mt-1">{ticket.description}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-medium text-gray-900">
-                          {new Intl.NumberFormat('vi-VN', {
-                            style: 'currency',
-                            currency: 'VND'
-                          }).format(ticket.price)}
-                        </p>
-                        <p className="text-sm text-gray-500 mt-1">
-                          Còn lại: {ticket.remaining} vé
-                        </p>
-                      </div>
-                    </div>
+        <form className="bg-white rounded-lg shadow-md p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-semibold">Chọn vé</h2>
+            <button
+              type="button"
+              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              onClick={() => router.push('/customer/events')}
+            >
+              Quay lại sự kiện
+            </button>
+          </div>
+          <div className="space-y-4 mb-8">
+            {ticketTypes.map((ticketType) => (
+              <div key={ticketType.id} className="flex items-center justify-between p-4 border rounded-lg">
+                <div>
+                  <h3 className="font-medium">{ticketType.name}</h3>
+                  <p className="text-gray-600">{ticketType.description}</p>
+                  <p className="text-blue-600 font-medium">
+                    {ticketType.price?.toLocaleString('vi-VN')} VNĐ
+                  </p>
+                </div>
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-2">
+                    <button
+                      type="button"
+                      onClick={() => handleQuantityChange(ticketType.id!, 
+                        (selectedTickets.find(t => t.ticketTypeId === ticketType.id)?.quantity || 0) - 1)}
+                      className="w-8 h-8 flex items-center justify-center border rounded-full hover:bg-gray-100"
+                    >
+                      -
+                    </button>
+                    <span className="w-8 text-center">
+                      {selectedTickets.find(t => t.ticketTypeId === ticketType.id)?.quantity || 0}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleQuantityChange(ticketType.id!, 
+                        (selectedTickets.find(t => t.ticketTypeId === ticketType.id)?.quantity || 0) + 1)}
+                      className="w-8 h-8 flex items-center justify-center border rounded-full hover:bg-gray-100"
+                    >
+                      +
+                    </button>
                   </div>
-                ))}
+                </div>
               </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Số lượng
-              </label>
-              <div className="flex items-center space-x-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => handleQuantityChange(quantity - 1)}
-                  disabled={quantity <= 1}
-                >
-                  -
-                </Button>
-                <span className="text-lg font-medium">{quantity}</span>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => handleQuantityChange(quantity + 1)}
-                  disabled={quantity >= 10}
-                >
-                  +
-                </Button>
-              </div>
-            </div>
+            ))}
           </div>
-        </div>
 
-        {/* Personal Information */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Thông tin cá nhân</h2>
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">
-                Họ và tên
-              </label>
-              <div className="mt-1 relative rounded-md shadow-sm">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <User className="h-5 w-5 text-gray-400" />
-                </div>
-                <input
-                  type="text"
-                  name="fullName"
-                  id="fullName"
-                  value={formData.fullName}
-                  onChange={handleInputChange}
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  required
-                />
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email
-              </label>
-              <div className="mt-1 relative rounded-md shadow-sm">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-gray-400" />
-                </div>
-                <input
-                  type="email"
-                  name="email"
-                  id="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  required
-                />
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-                Số điện thoại
-              </label>
-              <div className="mt-1 relative rounded-md shadow-sm">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Phone className="h-5 w-5 text-gray-400" />
-                </div>
-                <input
-                  type="tel"
-                  name="phone"
-                  id="phone"
-                  value={formData.phone}
-                  onChange={handleInputChange}
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  required
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Order Summary */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Tổng đơn hàng</h2>
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Loại vé:</span>
-              <span className="text-gray-900">{selectedTicket?.name}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Số lượng:</span>
-              <span className="text-gray-900">{quantity}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Đơn giá:</span>
-              <span className="text-gray-900">
-                {new Intl.NumberFormat('vi-VN', {
-                  style: 'currency',
-                  currency: 'VND'
-                }).format(selectedTicket?.price || 0)}
+          <div className="border-t pt-6">
+            <div className="flex justify-between items-center mb-6">
+              <span className="text-lg font-medium">Tổng tiền:</span>
+              <span className="text-2xl font-bold text-blue-600">
+                {calculateTotal().toLocaleString('vi-VN')} VNĐ
               </span>
             </div>
-            <div className="border-t pt-2 mt-2">
-              <div className="flex justify-between font-medium">
-                <span>Tổng cộng:</span>
-                <span className="text-blue-600">
-                  {new Intl.NumberFormat('vi-VN', {
-                    style: 'currency',
-                    currency: 'VND'
-                  }).format(totalAmount)}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
 
-        {/* Submit Button */}
-        <div className="flex justify-end">
-          <Button
-            type="submit"
-            className="flex items-center gap-2"
-          >
-            <CreditCard className="h-4 w-4" />
-            Tiến hành thanh toán
-          </Button>
-        </div>
-      </form>
+            <Button
+              type="button"
+              disabled={submitting || selectedTickets.length === 0 || !userInfo}
+              className="w-full"
+              onClick={handleBook}
+            >
+              {submitting ? 'Đang xử lý...' : 'Đặt vé'}
+            </Button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 } 

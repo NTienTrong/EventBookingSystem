@@ -15,22 +15,10 @@ import {
   Ticket,
 } from 'lucide-react';
 import { Button } from '@/components/common';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { vi } from 'date-fns/locale';
-
-interface Event {
-  id: string;
-  name: string;
-  description: string;
-  startTime: string;
-  endTime: string;
-  location: string;
-  category: string;
-  price: number;
-  remainingTickets: number;
-  totalTickets: number;
-  imageUrl: string;
-}
+import { eventsApi } from '@/services/api/events';
+import { EventDTO } from '@/types/event';
 
 const categories = [
   'Tất cả',
@@ -42,65 +30,27 @@ const categories = [
   'Nghệ thuật',
 ];
 
-const locations = [
-  'Tất cả',
-  'Hà Nội',
-  'TP.HCM',
-  'Đà Nẵng',
-  'Cần Thơ',
-  'Hải Phòng',
-];
-
 export default function EventsPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [events, setEvents] = useState<Event[]>([]);
-  const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
+  const [events, setEvents] = useState<EventDTO[]>([]);
+  const [filteredEvents, setFilteredEvents] = useState<EventDTO[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Tất cả');
   const [selectedLocation, setSelectedLocation] = useState('Tất cả');
   const [showFilters, setShowFilters] = useState(false);
   const [reloading, setReloading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        // TODO: Replace with actual API call
-        // Simulated data
-        const fakeEvents: Event[] = [
-          {
-            id: '1',
-            name: 'Hội thảo Công nghệ 2024',
-            description: 'Hội thảo về các xu hướng công nghệ mới nhất',
-            startTime: '2024-03-15T09:00:00',
-            endTime: '2024-03-15T17:00:00',
-            location: 'Hà Nội',
-            category: 'Công nghệ',
-            price: 500000,
-            remainingTickets: 50,
-            totalTickets: 100,
-            imageUrl: '/images/event1.jpg',
-          },
-          {
-            id: '2',
-            name: 'Workshop Marketing Digital',
-            description: 'Học cách làm marketing hiệu quả trên các nền tảng số',
-            startTime: '2024-03-20T13:00:00',
-            endTime: '2024-03-20T17:00:00',
-            location: 'TP.HCM',
-            category: 'Giáo dục',
-            price: 300000,
-            remainingTickets: 30,
-            totalTickets: 50,
-            imageUrl: '/images/event2.jpg',
-          },
-          // Add more fake events here
-        ];
-
-        setEvents(fakeEvents);
-        setFilteredEvents(fakeEvents);
+        const data = await eventsApi.getEvents();
+        setEvents(data);
+        setFilteredEvents(data);
       } catch (error) {
         console.error('Error fetching events:', error);
+        setError('Không thể tải danh sách sự kiện');
       } finally {
         setLoading(false);
       }
@@ -146,10 +96,38 @@ export default function EventsPage() {
     }
   };
 
+  const formatDateTime = (dateString: string | null | undefined) => {
+    if (!dateString) {
+      return 'Ngày không xác định';
+    }
+    try {
+      const date = parseISO(dateString);
+      return format(date, 'dd/MM/yyyy HH:mm', { locale: vi });
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'Ngày không hợp lệ';
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-center text-red-600">
+            <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>{error}</span>
+          </div>
+        </div>
       </div>
     );
   }
@@ -231,22 +209,6 @@ export default function EventsPage() {
                 ))}
               </select>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Địa điểm
-              </label>
-              <select
-                value={selectedLocation}
-                onChange={(e) => setSelectedLocation(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {locations.map((location) => (
-                  <option key={location} value={location}>
-                    {location}
-                  </option>
-                ))}
-              </select>
-            </div>
           </div>
         </div>
       )}
@@ -258,69 +220,55 @@ export default function EventsPage() {
             key={event.id}
             className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200"
           >
-            <div className="aspect-w-16 aspect-h-9">
+            <div className="relative h-48">
               <img
                 src={event.imageUrl}
                 alt={event.name}
-                className="w-full h-48 object-cover"
+                className="w-full h-full object-cover"
               />
+              <div className="absolute top-4 right-4">
+                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                  event.status === 'UPCOMING' ? 'bg-blue-100 text-blue-800' :
+                  event.status === 'ONGOING' ? 'bg-green-100 text-green-800' :
+                  event.status === 'COMPLETED' ? 'bg-gray-100 text-gray-800' :
+                  'bg-red-100 text-red-800'
+                }`}>
+                  {event.status === 'UPCOMING' ? 'Sắp diễn ra' :
+                   event.status === 'ONGOING' ? 'Đang diễn ra' :
+                   event.status === 'COMPLETED' ? 'Đã kết thúc' :
+                   'Đã hủy'}
+                </span>
+              </div>
             </div>
-            <div className="p-4">
+            <div className="p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
                 {event.name}
               </h3>
-              <p className="text-sm text-gray-500 mb-4 line-clamp-2">
+              <p className="text-gray-600 text-sm mb-4 line-clamp-2">
                 {event.description}
               </p>
-              <div className="space-y-2 mb-4">
+              <div className="space-y-2">
                 <div className="flex items-center text-sm text-gray-500">
-                  <Calendar className="h-4 w-4 mr-2" />
-                  {format(new Date(event.startTime), 'dd/MM/yyyy', { locale: vi })}
+                  <svg className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  <span>{event.location}</span>
                 </div>
                 <div className="flex items-center text-sm text-gray-500">
-                  <Clock className="h-4 w-4 mr-2" />
-                  {format(new Date(event.startTime), 'HH:mm', { locale: vi })} - {format(new Date(event.endTime), 'HH:mm', { locale: vi })}
-                </div>
-                <div className="flex items-center text-sm text-gray-500">
-                  <MapPin className="h-4 w-4 mr-2" />
-                  {event.location}
-                </div>
-                <div className="flex items-center text-sm text-gray-500">
-                  <Users className="h-4 w-4 mr-2" />
-                  {event.remainingTickets}/{event.totalTickets} vé
+                  <svg className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  <span>{event.availableTickets} vé còn lại</span>
                 </div>
               </div>
-              <div className="flex justify-between items-center mt-4">
-                <div className="flex items-center text-sm text-gray-500">
-                  <Calendar className="h-4 w-4 mr-1" />
-                  {format(new Date(event.startTime), 'dd/MM/yyyy', { locale: vi })}
-                </div>
-                <div className="flex items-center text-sm text-gray-500">
-                  <MapPin className="h-4 w-4 mr-1" />
-                  {event.location}
-                </div>
-              </div>
-              <div className="mt-4 flex justify-between items-center">
-                <div className="text-sm text-gray-500">
-                  Còn lại: {event.remainingTickets} vé
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => router.push(`/customer/events/${event.id}`)}
-                  >
-                    <Eye className="h-4 w-4 mr-2" />
-                    Chi tiết
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={() => router.push(`/customer/events/${event.id}/booking`)}
-                  >
-                    <Ticket className="h-4 w-4 mr-2" />
-                    Đặt vé
-                  </Button>
-                </div>
+              <div className="mt-4">
+                <button
+                  className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  onClick={() => router.push(`/customer/events/${event.id}/booking`)}
+                >
+                  Đặt vé
+                </button>
               </div>
             </div>
           </div>

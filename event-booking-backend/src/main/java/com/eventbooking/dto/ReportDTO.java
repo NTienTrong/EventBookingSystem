@@ -1,35 +1,35 @@
 package com.eventbooking.dto;
 
-import lombok.Data;
-import java.math.BigDecimal;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+
+import lombok.Data;
 
 @Data
 public class ReportDTO {
-    private LocalDate startDate;
-    private LocalDate endDate;
-    private BigDecimal totalRevenue;
-    private int totalTicketsSold;
-    private List<EventReportDTO> eventReports;
-
-    public void setStartDate(LocalDate startDate) {
-        this.startDate = startDate;
-    }
-
-    public void setEndDate(LocalDate endDate) {
-        this.endDate = endDate;
-    }
-
-    public void setTotalRevenue(BigDecimal totalRevenue) {
-        this.totalRevenue = totalRevenue;
-    }
-
-    public void setTotalTicketsSold(int totalTicketsSold) {
-        this.totalTicketsSold = totalTicketsSold;
-    }
-
-    public void setEventReports(List<EventReportDTO> eventReports) {
-        this.eventReports = eventReports;
-    }
+    // Revenue data
+    private List<Map<String, Object>> revenueData;
+    
+    // Ticket type distribution
+    private List<Map<String, Object>> ticketTypeData;
+    
+    // Popular events
+    private List<Map<String, Object>> popularEvents;
+    
+    // Summary statistics
+    private Map<String, Object> summary;
+    
+    // User activity
+    private Map<String, Object> userActivity;
+    
+    // User ticket history
+    private List<Map<String, Object>> userTicketHistory;
+    
+    // User event history
+    private List<Map<String, Object>> userEventHistory;
+    
+    // Date range
+    private LocalDateTime startDate;
+    private LocalDateTime endDate;
 } 

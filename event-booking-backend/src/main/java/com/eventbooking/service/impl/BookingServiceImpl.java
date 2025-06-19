@@ -1,144 +1,130 @@
 package com.eventbooking.service.impl;
 
-import com.eventbooking.dto.BookingDTO;
-import com.eventbooking.model.Booking;
-import com.eventbooking.model.Event;
-import com.eventbooking.model.User;
-import com.eventbooking.repository.BookingRepository;
-import com.eventbooking.repository.EventRepository;
-import com.eventbooking.repository.UserRepository;
-import com.eventbooking.service.BookingService;
-import com.eventbooking.exception.ResourceNotFoundException;
-import com.eventbooking.exception.BookingException;
-import com.eventbooking.factory.BookingFactory;
-import com.eventbooking.observer.BookingObserver;
-import com.eventbooking.observer.BookingSubject;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
+import com.eventbooking.dto.BookingDTO;
+import com.eventbooking.dto.BookingRequestDTO;
+import com.eventbooking.entity.Booking;
+import com.eventbooking.entity.Order;
+import com.eventbooking.entity.OrderItem;
+import com.eventbooking.entity.TicketType;
+import com.eventbooking.entity.User;
+import com.eventbooking.enums.BookingStatus;
+import com.eventbooking.enums.OrderStatus;
+import com.eventbooking.enums.PaymentStatus;
+import com.eventbooking.exception.ResourceNotFoundException;
+import com.eventbooking.factory.BookingFactory;
+import com.eventbooking.repository.BookingRepository;
+import com.eventbooking.repository.EventRepository;
+import com.eventbooking.repository.OrderItemRepository;
+import com.eventbooking.repository.OrderRepository;
+import com.eventbooking.repository.TicketRepository;
+import com.eventbooking.repository.TicketTypeRepository;
+import com.eventbooking.repository.UserRepository;
+import com.eventbooking.service.BookingService;
 
 @Service
 @Transactional
-public class BookingServiceImpl implements BookingService, BookingSubject {
-    
+public class BookingServiceImpl implements BookingService {
+
     private final BookingRepository bookingRepository;
     private final EventRepository eventRepository;
-    private final UserRepository userRepository;
+    private final TicketTypeRepository ticketTypeRepository;
+    private final TicketRepository ticketRepository;
     private final BookingFactory bookingFactory;
-    private final List<BookingObserver> observers = new ArrayList<>();
+    private final OrderRepository orderRepository;
+    private final OrderItemRepository orderItemRepository;
+    private final UserRepository userRepository;
 
     @Autowired
-    public BookingServiceImpl(BookingRepository bookingRepository,
-                            EventRepository eventRepository,
-                            UserRepository userRepository,
-                            BookingFactory bookingFactory,
-                            List<BookingObserver> observers) {
+    public BookingServiceImpl(
+            BookingRepository bookingRepository,
+            EventRepository eventRepository,
+            TicketTypeRepository ticketTypeRepository,
+            TicketRepository ticketRepository,
+            BookingFactory bookingFactory,
+            OrderRepository orderRepository,
+            OrderItemRepository orderItemRepository,
+            UserRepository userRepository) {
         this.bookingRepository = bookingRepository;
         this.eventRepository = eventRepository;
-        this.userRepository = userRepository;
+        this.ticketTypeRepository = ticketTypeRepository;
+        this.ticketRepository = ticketRepository;
         this.bookingFactory = bookingFactory;
-        this.observers.addAll(observers);
+        this.orderRepository = orderRepository;
+        this.orderItemRepository = orderItemRepository;
+        this.userRepository = userRepository;
     }
 
     @Override
-    public void registerObserver(BookingObserver observer) {
-        observers.add(observer);
-    }
-
-    @Override
-    public void removeObserver(BookingObserver observer) {
-        observers.remove(observer);
-    }
-
-    @Override
-    public void notifyObservers(Booking booking, String eventType) {
-        observers.forEach(observer -> observer.update(booking, eventType));
-    }
-
-    @Override
-    public BookingDTO createBooking(BookingDTO bookingDTO) {
-        validateBooking(bookingDTO);
+    public BookingDTO createBooking(BookingRequestDTO request) {
+        Booking booking = new Booking();
+        booking.setEventId(request.getEventId());
+        booking.setUserId(request.getUserId());
+        booking.setNumberOfTickets(request.getNumberOfTickets());
+        booking.setTotalAmount(request.getTotalAmount());
+        booking.setStatus(BookingStatus.PENDING);
+        booking.setPaymentStatus(PaymentStatus.PENDING);
+        booking.setPaymentMethod(request.getPaymentMethod());
+        booking.setBookingTime(LocalDateTime.now());
+        booking.setCreatedAt(LocalDateTime.now());
+        booking.setUpdatedAt(LocalDateTime.now());
         
-        Event event = eventRepository.findById(bookingDTO.getEventId())
-            .orElseThrow(() -> new ResourceNotFoundException("Event not found"));
-        User user = userRepository.findById(bookingDTO.getUserId())
-            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-        
-        Booking booking = bookingFactory.createBooking(bookingDTO, event, user);
         Booking savedBooking = bookingRepository.save(booking);
-        
-        notifyObservers(savedBooking, "BOOKING_CREATED");
+
+        // Tạo Order và OrderItem
+        User user = userRepository.findById(request.getUserId())
+            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        Order order = new Order();
+        order.setUser(user);
+        order.setOrderNumber("ORD-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+        order.setTotalAmount(request.getTotalAmount());
+        order.setStatus(OrderStatus.PENDING);
+        order.setPaymentStatus(PaymentStatus.PENDING);
+        order.setPaymentMethod(request.getPaymentMethod());
+        order.setCreatedAt(LocalDateTime.now());
+        order.setUpdatedAt(LocalDateTime.now());
+        order.setCustomerEmail(user.getEmail());
+        order.setCustomerPhone(user.getPhoneNumber());
+        Order savedOrder = orderRepository.save(order);
+
+        // Tạo OrderItem cho từng loại vé
+        for (BookingRequestDTO.BookingTicketDTO ticket : request.getTickets()) {
+            TicketType ticketType = ticketTypeRepository.findById(ticket.getTicketTypeId())
+                .orElseThrow(() -> new ResourceNotFoundException("TicketType not found"));
+            OrderItem item = new OrderItem();
+            item.setOrder(savedOrder);
+            item.setTicketType(ticketType);
+            item.setQuantity(ticket.getQuantity());
+            item.setUnitPrice(ticketType.getPrice());
+            item.setSubtotal(ticketType.getPrice().multiply(BigDecimal.valueOf(ticket.getQuantity())));
+            orderItemRepository.save(item);
+        }
+
         return bookingFactory.createBookingDTO(savedBooking);
     }
 
     @Override
-    public BookingDTO updateBooking(Long id, BookingDTO bookingDTO) {
+    public BookingDTO getBookingById(Long id) throws ResourceNotFoundException {
         Booking booking = bookingRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + id));
-        
-        validateBooking(bookingDTO);
-        
-        booking.setNumberOfTickets(bookingDTO.getNumberOfTickets());
-        booking.setTotalAmount(bookingDTO.getTotalAmount());
-        booking.setPaymentMethod(bookingDTO.getPaymentMethod());
-        booking.setPaymentStatus(bookingDTO.getPaymentStatus());
-        
-        Booking updatedBooking = bookingRepository.save(booking);
-        notifyObservers(updatedBooking, "BOOKING_UPDATED");
-        return bookingFactory.createBookingDTO(updatedBooking);
-    }
-
-    @Override
-    public void cancelBooking(Long id) {
-        Booking booking = bookingRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + id));
-        
-        if ("CANCELLED".equals(booking.getStatus())) {
-            throw new BookingException("Booking is already cancelled");
-        }
-        
-        booking.setStatus("CANCELLED");
-        Booking cancelledBooking = bookingRepository.save(booking);
-        notifyObservers(cancelledBooking, "BOOKING_CANCELLED");
-    }
-
-    @Override
-    public void processPayment(Long id, String paymentMethod, String transactionId) {
-        Booking booking = bookingRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + id));
-        
-        booking.setPaymentMethod(paymentMethod);
-        booking.setPaymentStatus("PAID");
-        booking.setTransactionId(transactionId);
-        
-        Booking paidBooking = bookingRepository.save(booking);
-        notifyObservers(paidBooking, "PAYMENT_RECEIVED");
-    }
-
-    @Override
-    public BookingDTO getBookingById(Long id) {
-        Booking booking = bookingRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + id));
+            .orElseThrow(() -> new ResourceNotFoundException("Booking not found"));
         return bookingFactory.createBookingDTO(booking);
     }
 
     @Override
-    public List<BookingDTO> getBookingsByUserId(Long userId) {
-        return bookingRepository.findByUserId(userId).stream()
-            .map(bookingFactory::createBookingDTO)
-            .collect(Collectors.toList());
-    }
-
-    @Override
-    public List<BookingDTO> getBookingsByEventId(Long eventId) {
-        return bookingRepository.findByEventId(eventId).stream()
-            .map(bookingFactory::createBookingDTO)
-            .collect(Collectors.toList());
+    public BookingDTO getBookingByOrderNumber(String orderNumber) throws ResourceNotFoundException {
+        Booking booking = bookingRepository.findByOrderNumber(orderNumber)
+            .orElseThrow(() -> new ResourceNotFoundException("Booking not found"));
+        return bookingFactory.createBookingDTO(booking);
     }
 
     @Override
@@ -148,24 +134,120 @@ public class BookingServiceImpl implements BookingService, BookingSubject {
             .collect(Collectors.toList());
     }
 
-    private void validateBooking(BookingDTO bookingDTO) {
-        Event event = eventRepository.findById(bookingDTO.getEventId())
-            .orElseThrow(() -> new ResourceNotFoundException("Event not found"));
+    @Override
+    public void processPayment(Long bookingId, String paymentMethod, String transactionId) {
+        Booking booking = bookingRepository.findById(bookingId)
+            .orElseThrow(() -> new ResourceNotFoundException("Booking not found"));
         
-        if (event.getStartTime().isBefore(LocalDateTime.now())) {
-            throw new BookingException("Cannot book for past events");
-        }
+        booking.setPaymentMethod(paymentMethod);
+        booking.setTransactionId(transactionId);
+        booking.setPaymentStatus(PaymentStatus.COMPLETED);
+        booking.setStatus(BookingStatus.CONFIRMED);
+        booking.setUpdatedAt(LocalDateTime.now());
         
-        if (bookingDTO.getNumberOfTickets() <= 0) {
-            throw new BookingException("Number of tickets must be greater than 0");
-        }
-        
-        int bookedTickets = bookingRepository.findByEventId(event.getId()).stream()
-            .mapToInt(Booking::getNumberOfTickets)
-            .sum();
-        
-        if (bookedTickets + bookingDTO.getNumberOfTickets() > event.getCapacity()) {
-            throw new BookingException("Not enough tickets available");
+        bookingRepository.save(booking);
+
+        // Cập nhật trạng thái cho Order liên quan
+        Optional<Order> orderOpt = orderRepository.findByOrderNumber(booking.getOrderNumber());
+        if (orderOpt.isPresent()) {
+            Order order = orderOpt.get();
+            order.setPaymentStatus(com.eventbooking.enums.PaymentStatus.COMPLETED);
+            order.setStatus(com.eventbooking.enums.OrderStatus.CONFIRMED);
+            order.setUpdatedAt(LocalDateTime.now());
+            orderRepository.save(order);
         }
     }
-} 
+
+    // @Override
+    // public BookingDTO updateBooking(Long id, BookingDTO bookingDTO) {
+    //     // TODO: Implement
+    //     return null;
+    // }
+
+    // @Override
+    // public void cancelBooking(Long id) {
+    //     // TODO: Implement
+    // }
+
+    // @Override
+    // public List<BookingDTO> getBookingsByUserId(Long userId) {
+    // public void processPayment(Long id, String paymentMethod, String transactionId) {
+    //     // TODO: Implement
+    // }
+
+    // @Override
+    // public BookingDTO getBookingById(Long id) {
+    //     Booking booking = bookingRepository.findById(id)
+    //             .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
+    //     List<Ticket> tickets = ticketRepository.findByBookingId(id);
+    //     return convertToBookingDTO(booking, tickets);
+    // }
+
+    // @Override
+    // public List<BookingDTO> getBookingsByUserId(Long userId) {
+    //     // TODO: Implement
+    //     return null;
+    // }
+
+    // @Override
+    // public List<BookingDTO> getBookingsByEventId(Long eventId) {
+    //     // TODO: Implement
+    //     return null;
+    // }
+
+    // @Override
+    // public List<BookingDTO> getAllBookings() {
+    //     // TODO: Implement
+    //     return null;
+    // }
+
+    // private BookingDTO convertToBookingDTO(Booking booking, List<Ticket> tickets) {
+    //     BookingDTO dto = new BookingDTO();
+    //     dto.setId(booking.getId());
+    //     dto.setEventId(booking.getEvent().getId());
+    //     dto.setUserId(booking.getUser().getId());
+    //     dto.setNumberOfTickets(booking.getNumberOfTickets());
+    //     dto.setTotalAmount(booking.getTotalAmount());
+    //     dto.setBookingTime(booking.getBookingTime());
+    //     dto.setStatus(booking.getStatus());
+    //     dto.setPaymentStatus(booking.getPaymentStatus());
+    //     dto.setPaymentMethod(booking.getPaymentMethod());
+    //     dto.setTransactionId(booking.getTransactionId());
+    //     return dto;
+    // }
+
+    // private String generateOrderNumber() {
+    //     return "ORD-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+    // }
+
+    // private String generateTicketCode() {
+    //     return "TKT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+    // }
+
+    // private String generateQRCode() {
+    //     return "QR-" + UUID.randomUUID().toString();
+    // }
+
+    // private BookingResponseDTO convertToResponseDTO(Booking booking, List<Ticket> tickets) {
+    //     BookingResponseDTO response = new BookingResponseDTO();
+    //     response.setOrderId(booking.getId());
+    //     response.setOrderNumber(booking.getOrderNumber());
+    //     response.setTotalAmount(booking.getTotalAmount());
+    //     response.setStatus(booking.getStatus());
+
+    //     List<BookingResponseDTO.TicketDTO> ticketDTOs = new ArrayList<>();
+    //     for (Ticket ticket : tickets) {
+    //         BookingResponseDTO.TicketDTO ticketDTO = new BookingResponseDTO.TicketDTO();
+    //         ticketDTO.setId(ticket.getId());
+    //         ticketDTO.setTicketCode(ticket.getTicketCode());
+    //         ticketDTO.setQrCode(ticket.getQrCode());
+    //         ticketDTO.setStatus(ticket.getStatus());
+    //         ticketDTO.setTicketTypeName(ticket.getTicketType().getName());
+    //         ticketDTO.setPrice(ticket.getPrice());
+    //         ticketDTOs.add(ticketDTO);
+    //     }
+    //     response.setTickets(ticketDTOs);
+
+    //     return response;
+    // }
+}

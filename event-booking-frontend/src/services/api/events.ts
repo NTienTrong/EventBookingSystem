@@ -1,11 +1,13 @@
 import { Event, EventFilter } from '@/types/event';
 import axios from 'axios';
-import { api } from './api';
+import api from './api';
+import { API_URL } from '@/config';
+import { EventDTO } from '@/types/event';
 
 export const eventsApi = {
   // Lấy danh sách sự kiện
-  getEvents: async (filter?: EventFilter) => {
-    const response = await api.get('/events', { params: filter });
+  getEvents: async (): Promise<EventDTO[]> => {
+    const response = await axios.get(`${API_URL}/events`);
     return response.data;
   },
 

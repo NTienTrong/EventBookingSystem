@@ -5,7 +5,8 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import com.eventbooking.model.User;
+import com.eventbooking.entity.User;
+import com.eventbooking.entity.UserRole;
 import com.eventbooking.repository.UserRepository;
 
 @Configuration
@@ -27,7 +28,7 @@ public class AdminInitializer implements CommandLineRunner {
             admin.setUsername("admin");
             admin.setPassword(passwordEncoder.encode(adminPassword));
             admin.setFullName("Administrator");
-            admin.setRole("ADMIN");
+            admin.setRole(UserRole.ADMIN);
             userRepository.save(admin);
             System.out.println("Admin account created: " + adminEmail + " / " + adminPassword);
         }

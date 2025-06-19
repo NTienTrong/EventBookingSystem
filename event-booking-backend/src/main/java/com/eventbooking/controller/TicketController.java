@@ -1,46 +1,55 @@
 package com.eventbooking.controller;
 
-import com.eventbooking.model.Ticket;
-import com.eventbooking.model.TicketStatus;
-import com.eventbooking.dto.TicketDTO;
-import com.eventbooking.dto.CreateTicketDTO;
-import com.eventbooking.dto.UpdateTicketStatusDTO;
-import com.eventbooking.service.TicketService;
-import com.eventbooking.factory.TicketFactory;
-import com.eventbooking.exception.ResourceNotFoundException;
-import com.eventbooking.exception.TicketValidationException;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import com.eventbooking.dto.CreateTicketDTO;
+import com.eventbooking.dto.TicketDTO;
+import com.eventbooking.dto.UpdateTicketStatusDTO;
+import com.eventbooking.entity.Ticket;
+import com.eventbooking.enums.TicketStatus;
+import com.eventbooking.exception.ResourceNotFoundException;
+import com.eventbooking.exception.TicketValidationException;
+import com.eventbooking.factory.TicketFactory;
+import com.eventbooking.service.SecurityService;
+import com.eventbooking.service.TicketService;
 
 @RestController
 @RequestMapping("/api/tickets")
+@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
 public class TicketController {
-
     private final TicketService ticketService;
     private final TicketFactory ticketFactory;
+    private final SecurityService securityService;
 
     @Autowired
-    public TicketController(TicketService ticketService, TicketFactory ticketFactory) {
+    public TicketController(TicketService ticketService, TicketFactory ticketFactory, SecurityService securityService) {
         this.ticketService = ticketService;
         this.ticketFactory = ticketFactory;
+        this.securityService = securityService;
     }
 
-    @PostMapping
+    @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<TicketDTO> createTicket(@RequestBody CreateTicketDTO createTicketDTO) {
-        try {
-            Ticket ticket = ticketService.createTicket(createTicketDTO);
-            return ResponseEntity.ok(ticketFactory.createTicketDTO(ticket));
-        } catch (ResourceNotFoundException e) {
-            return ResponseEntity.notFound().build();
-        } catch (TicketValidationException e) {
-            return ResponseEntity.badRequest().build();
-        }
+    public ResponseEntity<List<TicketDTO>> getAllTickets(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Long eventId,
+            @RequestParam(required = false) TicketStatus status) {
+        return ResponseEntity.ok(ticketService.getAllTickets(search, eventId, status));
     }
 
     @GetMapping("/{id}")
@@ -65,90 +74,75 @@ public class TicketController {
         }
     }
 
-    @GetMapping("/order/{orderId}")
-    @PreAuthorize("hasRole('ADMIN') or @securityService.isOrderOwner(#orderId)")
-    public ResponseEntity<List<TicketDTO>> getTicketsByOrderId(@PathVariable Long orderId) {
-        List<Ticket> tickets = ticketService.getTicketsByOrderId(orderId);
-        List<TicketDTO> ticketDTOs = tickets.stream()
-            .map(ticketFactory::createTicketDTO)
-            .collect(Collectors.toList());
-        return ResponseEntity.ok(ticketDTOs);
-    }
-
-    @GetMapping("/customer/{customerId}")
-    @PreAuthorize("hasRole('ADMIN') or @securityService.isCurrentUser(#customerId)")
-    public ResponseEntity<List<TicketDTO>> getTicketsByCustomerId(@PathVariable Long customerId) {
-        List<Ticket> tickets = ticketService.getTicketsByCustomerId(customerId);
-        List<TicketDTO> ticketDTOs = tickets.stream()
-            .map(ticketFactory::createTicketDTO)
-            .collect(Collectors.toList());
-        return ResponseEntity.ok(ticketDTOs);
-    }
-
-    @GetMapping("/event/{eventId}")
-    @PreAuthorize("hasRole('ADMIN') or @securityService.isEventOrganizer(#eventId)")
-    public ResponseEntity<List<TicketDTO>> getTicketsByEventId(@PathVariable Long eventId) {
-        List<Ticket> tickets = ticketService.getTicketsByEventId(eventId);
-        List<TicketDTO> ticketDTOs = tickets.stream()
-            .map(ticketFactory::createTicketDTO)
-            .collect(Collectors.toList());
-        return ResponseEntity.ok(ticketDTOs);
-    }
-
-    @GetMapping("/event/{eventId}/status/{status}")
-    @PreAuthorize("hasRole('ADMIN') or @securityService.isEventOrganizer(#eventId)")
-    public ResponseEntity<List<TicketDTO>> getTicketsByEventIdAndStatus(
-            @PathVariable Long eventId,
-            @PathVariable TicketStatus status) {
-        List<Ticket> tickets = ticketService.getTicketsByEventIdAndStatus(eventId, status);
-        List<TicketDTO> ticketDTOs = tickets.stream()
-            .map(ticketFactory::createTicketDTO)
-            .collect(Collectors.toList());
-        return ResponseEntity.ok(ticketDTOs);
-    }
-
-    @PutMapping("/{id}/status")
-    @PreAuthorize("hasRole('ADMIN') or @securityService.isEventOrganizerForTicket(#id)")
-    public ResponseEntity<TicketDTO> updateTicketStatus(
-            @PathVariable Long id,
-            @RequestBody UpdateTicketStatusDTO updateTicketStatusDTO) {
+    @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<TicketDTO> createTicket(@RequestBody CreateTicketDTO createTicketDTO) {
         try {
-            Ticket ticket = ticketService.updateTicketStatus(id, updateTicketStatusDTO.getStatus());
+            if (createTicketDTO.getBookingId() == null) {
+                return ResponseEntity.badRequest().build();
+            }
+            Ticket ticket = ticketService.createTicket(createTicketDTO);
+            return ResponseEntity.ok(ticketFactory.createTicketDTO(ticket));
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        } catch (TicketValidationException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<TicketDTO> updateTicket(@PathVariable Long id, @RequestBody TicketDTO ticketDTO) {
+        try {
+            Ticket ticket = ticketService.updateTicketStatus(id, ticketDTO.getStatus());
             return ResponseEntity.ok(ticketFactory.createTicketDTO(ticket));
         } catch (ResourceNotFoundException e) {
             return ResponseEntity.notFound().build();
         }
     }
 
-    @PostMapping("/validate/{ticketCode}")
-    @PreAuthorize("hasRole('ADMIN') or @securityService.isEventOrganizerForTicketByCode(#ticketCode)")
-    public ResponseEntity<Void> validateTicket(@PathVariable String ticketCode) {
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteTicket(@PathVariable Long id) {
         try {
-            ticketService.validateTicket(ticketCode);
+            ticketService.deleteTicket(id);
             return ResponseEntity.ok().build();
-        } catch (TicketValidationException e) {
-            return ResponseEntity.badRequest().build();
         } catch (ResourceNotFoundException e) {
             return ResponseEntity.notFound().build();
         }
     }
 
-    @GetMapping("/event/{eventId}/count")
-    @PreAuthorize("hasRole('ADMIN') or @securityService.isEventOrganizer(#eventId)")
-    public ResponseEntity<Long> countTicketsByEventIdAndStatus(
-            @PathVariable Long eventId,
-            @RequestParam TicketStatus status) {
-        long count = ticketService.countTicketsByEventIdAndStatus(eventId, status);
-        return ResponseEntity.ok(count);
+    @PatchMapping("/{id}/status")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<TicketDTO> updateTicketStatus(
+            @PathVariable Long id,
+            @RequestBody UpdateTicketStatusDTO statusDTO) {
+        try {
+            Ticket ticket = ticketService.updateTicketStatus(id, statusDTO.getStatus());
+            return ResponseEntity.ok(ticketFactory.createTicketDTO(ticket));
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
-    @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<List<TicketDTO>> getAllTickets() {
-        List<Ticket> tickets = ticketService.getAllTickets();
-        List<TicketDTO> ticketDTOs = tickets.stream()
-            .map(ticketFactory::createTicketDTO)
-            .collect(Collectors.toList());
-        return ResponseEntity.ok(ticketDTOs);
+    @PostMapping("/validate")
+    public ResponseEntity<Boolean> validateTicket(@RequestBody String ticketCode) {
+        try {
+            ticketService.validateTicket(ticketCode);
+            return ResponseEntity.ok(true);
+        } catch (TicketValidationException e) {
+            return ResponseEntity.ok(false);
+        }
+    }
+
+    @GetMapping("/customer/{customerId}")
+    @PreAuthorize("hasRole('ADMIN') or @securityService.isCurrentUser(#customerId)")
+    public ResponseEntity<List<TicketDTO>> getTicketsByCustomerId(@PathVariable Long customerId) {
+        return ResponseEntity.ok(
+            ticketService.getTicketsByCustomerId(customerId)
+                .stream()
+                .map(ticketFactory::createTicketDTO)
+                .toList()
+        );
     }
 } 

@@ -10,13 +10,13 @@ import { User } from '@/types/user';
 import UserDetailModal from '@/components/admin/users/UserDetailModal';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
+import toast from 'react-hot-toast';
 
 export default function UsersManagement() {
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all');
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -32,6 +32,7 @@ export default function UsersManagement() {
     } catch (err) {
       setError('Không thể tải danh sách người dùng');
       console.error('Error loading users:', err);
+      toast.error('Không thể tải danh sách người dùng');
     } finally {
       setIsLoading(false);
     }
@@ -44,13 +45,21 @@ export default function UsersManagement() {
   const handleDelete = async () => {
     try {
       if (selectedUser) {
+        if (selectedUser.role === 'ADMIN') {
+          toast.error('Không thể xóa tài khoản Admin');
+          setIsDeleteModalOpen(false);
+          setSelectedUser(null);
+          return;
+        }
         await usersApi.deleteUser(String(selectedUser.id));
         await fetchUsers();
         setIsDeleteModalOpen(false);
         setSelectedUser(null);
+        toast.success(`Đã xóa người dùng "${selectedUser.fullName}" thành công`);
       }
     } catch (error) {
       console.error('Error deleting user:', error);
+      toast.error('Không thể xóa người dùng. Vui lòng thử lại sau.');
     }
   };
 
@@ -59,21 +68,12 @@ export default function UsersManagement() {
     setIsDetailModalOpen(true);
   };
 
-  const handleUpdateStatus = async (userId: number, isActive: boolean) => {
-    try {
-      await usersApi.updateUser(String(userId), { isActive });
-      await fetchUsers();
-    } catch (err) {
-      console.error('Error updating user status:', err);
-    }
-  };
-
   const filteredUsers = users.filter((user) => {
     const matchesSearch =
       user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (user.phone ?? user.phoneNumber ?? '').includes(searchTerm);
-    const matchesRole = roleFilter === 'all' || user.role === roleFilter.toUpperCase();
+    const matchesRole = roleFilter === 'all' || user.role === roleFilter;
     return matchesSearch && matchesRole;
   });
 
@@ -110,72 +110,59 @@ export default function UsersManagement() {
 
       {/* Search and filters */}
       <Card className="p-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-          <input
-            type="text"
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              type="text"
               placeholder="Tìm kiếm theo tên, email hoặc số điện thoại..."
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <select
+            className="w-full py-2 px-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            value={roleFilter}
+            onChange={(e) => setRoleFilter(e.target.value)}
+          >
+            <option value="all">Tất cả vai trò</option>
+            <option value="ADMIN">Admin</option>
+            <option value="CUSTOMER">Khách hàng</option>
+          </select>
         </div>
-        <select
-          className="w-full py-2 px-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          value={roleFilter}
-          onChange={(e) => setRoleFilter(e.target.value)}
-        >
-          <option value="all">Tất cả vai trò</option>
-          <option value="admin">Admin</option>
-          <option value="customer">Khách hàng</option>
-        </select>
-        <select
-          className="w-full py-2 px-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-        >
-          <option value="all">Tất cả trạng thái</option>
-          <option value="active">Hoạt động</option>
-          <option value="inactive">Không hoạt động</option>
-          <option value="blocked">Đã khóa</option>
-        </select>
-      </div>
       </Card>
 
       {/* Users table */}
       <Card>
         <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Người dùng
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Liên hệ
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Vai trò
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Ngày tham gia
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Đơn hàng
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Đăng nhập cuối
-              </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Thao tác
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Người dùng
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Liên hệ
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Vai trò
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Ngày tham gia
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Đăng nhập cuối
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Thao tác
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
               {filteredUsers.map((user) => (
-              <tr key={user.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap">
+                <tr key={user.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="h-10 w-10 flex-shrink-0">
                         <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center">
@@ -185,17 +172,17 @@ export default function UsersManagement() {
                         </div>
                       </div>
                       <div className="ml-4">
-                  <div className="text-sm font-medium text-gray-900">
-                    {user.fullName}
+                        <div className="text-sm font-medium text-gray-900">
+                          {user.fullName}
                         </div>
                       </div>
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="text-sm text-gray-900">{user.email}</div>
-                  <div className="text-sm text-gray-500">{user.phone}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="text-sm text-gray-900">{user.email}</div>
+                    <div className="text-sm text-gray-500">{user.phone}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
                     <span
                       className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                         user.role === 'ADMIN'
@@ -203,21 +190,18 @@ export default function UsersManagement() {
                           : 'bg-blue-100 text-blue-800'
                       }`}
                     >
-                    {user.role === 'ADMIN' ? 'Admin' : 'Khách hàng'}
+                      {user.role === 'ADMIN' ? 'Admin' : 'Khách hàng'}
                     </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">
-                    {user.createdAt ? new Date(user.createdAt).toLocaleDateString('vi-VN') : ''}
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">{user.totalOrders}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {user.lastLoginAt ? format(new Date(user.lastLoginAt), 'HH:mm - dd/MM/yyyy', { locale: vi }) : 'Chưa đăng nhập'}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">
+                      {user.createdAt ? format(new Date(user.createdAt), 'HH:mm - dd/MM/yyyy', { locale: vi }) : ''}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {user.lastLoginAt ? format(new Date(user.lastLoginAt), 'HH:mm - dd/MM/yyyy', { locale: vi }) : 'Chưa đăng nhập'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex items-center justify-end space-x-2">
                       <Button
                         variant="ghost"
@@ -227,24 +211,26 @@ export default function UsersManagement() {
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        onClick={() => {
-                          setSelectedUser(user);
-                          setIsDeleteModalOpen(true);
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      {user.role !== 'ADMIN' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => {
+                            setSelectedUser(user);
+                            setIsDeleteModalOpen(true);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </Card>
 
       {/* Delete Confirmation Modal */}

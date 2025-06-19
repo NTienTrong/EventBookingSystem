@@ -1,6 +1,6 @@
 package com.eventbooking.observer;
 
-import com.eventbooking.model.Booking;
+import com.eventbooking.entity.Booking;
 
 public interface BookingSubject {
     void registerObserver(BookingObserver observer);

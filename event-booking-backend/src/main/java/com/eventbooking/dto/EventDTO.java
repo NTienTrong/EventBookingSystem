@@ -2,6 +2,7 @@ package com.eventbooking.dto;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.Min;
@@ -37,18 +38,22 @@ public class EventDTO {
     @Min(value = 1, message = "Capacity must be at least 1")
     private Integer capacity;
 
-    @NotNull(message = "Price is required")
-    @Min(value = 0, message = "Price cannot be negative")
-    private BigDecimal price;
-
     private String imageUrl;
     private String category;
     private String status;
+
+    @NotNull(message = "Organizer ID is required")
     private Long organizerId;
+
+    @NotNull(message = "Total tickets is required")
+    @Min(value = 0, message = "Total tickets cannot be negative")
     private Integer totalTickets;
+
+    @NotNull(message = "Sold tickets is required")
+    @Min(value = 0, message = "Sold tickets cannot be negative")
     private Integer soldTickets;
-    private BigDecimal revenue;
-    private String ticketTypes;
+
+    private List<TicketTypeDTO> ticketTypes;
 
     // Getters
     public Long getId() { return id; }
@@ -58,15 +63,12 @@ public class EventDTO {
     public LocalDateTime getEndTime() { return endTime; }
     public String getLocation() { return location; }
     public Integer getCapacity() { return capacity; }
-    public BigDecimal getPrice() { return price; }
     public String getImageUrl() { return imageUrl; }
     public String getCategory() { return category; }
     public String getStatus() { return status; }
     public Long getOrganizerId() { return organizerId; }
     public Integer getTotalTickets() { return totalTickets; }
     public Integer getSoldTickets() { return soldTickets; }
-    public BigDecimal getRevenue() { return revenue; }
-    public String getTicketTypes() { return ticketTypes; }
 
     // Setters
     public void setId(Long id) { this.id = id; }
@@ -76,13 +78,10 @@ public class EventDTO {
     public void setEndTime(LocalDateTime endTime) { this.endTime = endTime; }
     public void setLocation(String location) { this.location = location; }
     public void setCapacity(Integer capacity) { this.capacity = capacity; }
-    public void setPrice(BigDecimal price) { this.price = price; }
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
     public void setCategory(String category) { this.category = category; }
     public void setStatus(String status) { this.status = status; }
     public void setOrganizerId(Long organizerId) { this.organizerId = organizerId; }
     public void setTotalTickets(Integer totalTickets) { this.totalTickets = totalTickets; }
     public void setSoldTickets(Integer soldTickets) { this.soldTickets = soldTickets; }
-    public void setRevenue(BigDecimal revenue) { this.revenue = revenue; }
-    public void setTicketTypes(String ticketTypes) { this.ticketTypes = ticketTypes; }
 } 

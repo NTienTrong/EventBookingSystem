@@ -12,7 +12,7 @@ const mockUser = {
   email: 'nguyenvana@example.com',
   phone: '0123456789',
   role: 'customer',
-  status: 'active',
+  status: 'COMPLETED',
   joinedDate: '2024-01-15',
   totalOrders: 5,
   address: '123 Đường ABC, Quận XYZ, TP.HCM',

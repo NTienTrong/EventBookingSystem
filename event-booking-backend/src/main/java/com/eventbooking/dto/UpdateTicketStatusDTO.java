@@ -1,6 +1,7 @@
 package com.eventbooking.dto;
 
-import com.eventbooking.model.TicketStatus;
+import com.eventbooking.enums.TicketStatus;
+
 import lombok.Data;
 
 @Data

@@ -1,17 +1,26 @@
 package com.eventbooking.controller;
 
-import com.eventbooking.dto.TicketTypeDTO;
-import com.eventbooking.service.TicketTypeService;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
+import com.eventbooking.dto.TicketTypeDTO;
+import com.eventbooking.service.TicketTypeService;
 
 @RestController
 @RequestMapping("/api/ticket-types")
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
 public class TicketTypeController {
 
     private final TicketTypeService ticketTypeService;
@@ -22,18 +31,18 @@ public class TicketTypeController {
     }
 
     @GetMapping
-    public ResponseEntity<List<TicketTypeDTO>> getAllTicketTypes() {
-        return ResponseEntity.ok(ticketTypeService.getAllTicketTypes());
+    public ResponseEntity<List<TicketTypeDTO>> getAllTicketTypes(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Long eventId) {
+        return ResponseEntity.ok(ticketTypeService.getAllTicketTypes(search, eventId));
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<TicketTypeDTO> createTicketType(@RequestBody TicketTypeDTO ticketTypeDTO) {
         return ResponseEntity.ok(ticketTypeService.createTicketType(ticketTypeDTO));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<TicketTypeDTO> updateTicketType(
             @PathVariable Long id,
             @RequestBody TicketTypeDTO ticketTypeDTO) {
@@ -41,7 +50,6 @@ public class TicketTypeController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteTicketType(@PathVariable Long id) {
         ticketTypeService.deleteTicketType(id);
         return ResponseEntity.ok().build();

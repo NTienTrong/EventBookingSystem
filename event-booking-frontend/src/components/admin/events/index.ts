@@ -1,2 +1,2 @@
-export { EventModal } from './EventModal';
+export {EventModal} from './EventModal';
 export { EventDetailModal } from './EventDetailModal'; 

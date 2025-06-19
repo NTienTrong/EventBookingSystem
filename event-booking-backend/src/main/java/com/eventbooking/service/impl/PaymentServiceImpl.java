@@ -1,18 +1,20 @@
 package com.eventbooking.service.impl;
 
-import com.eventbooking.dto.PaymentRequest;
-import com.eventbooking.dto.BookingDTO;
-import com.eventbooking.model.Booking;
-import com.eventbooking.repository.BookingRepository;
-import com.eventbooking.service.PaymentService;
-import com.eventbooking.service.BookingService;
-import com.eventbooking.exception.ResourceNotFoundException;
-import com.eventbooking.exception.PaymentException;
+import java.util.UUID;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.UUID;
+import com.eventbooking.dto.BookingDTO;
+import com.eventbooking.dto.PaymentRequest;
+import com.eventbooking.entity.Booking;
+import com.eventbooking.enums.PaymentStatus;
+import com.eventbooking.exception.PaymentException;
+import com.eventbooking.exception.ResourceNotFoundException;
+import com.eventbooking.repository.BookingRepository;
+import com.eventbooking.service.BookingService;
+import com.eventbooking.service.PaymentService;
 
 @Service
 @Transactional
@@ -33,7 +35,7 @@ public class PaymentServiceImpl implements PaymentService {
         Booking booking = bookingRepository.findById(paymentRequest.getBookingId())
             .orElseThrow(() -> new ResourceNotFoundException("Booking not found"));
 
-        if (booking.getPaymentStatus().equals("PAID")) {
+        if (booking.getPaymentStatus().equals("COMPLETED")) {
             throw new PaymentException("Booking is already paid");
         }
 
@@ -54,12 +56,12 @@ public class PaymentServiceImpl implements PaymentService {
         Booking booking = bookingRepository.findById(bookingId)
             .orElseThrow(() -> new ResourceNotFoundException("Booking not found"));
 
-        if (!booking.getPaymentStatus().equals("PAID")) {
+        if (!booking.getPaymentStatus().equals("COMPLETED")) {
             throw new PaymentException("Booking is not paid");
         }
 
         // Process refund (in a real application, this would integrate with a payment gateway)
-        booking.setPaymentStatus("REFUNDED");
+        booking.setPaymentStatus(PaymentStatus.REFUNDED);
         bookingRepository.save(booking);
 
         return bookingService.getBookingById(bookingId);

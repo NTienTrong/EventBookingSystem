@@ -1,10 +1,15 @@
 package com.eventbooking.service;
 
+import java.time.LocalDateTime;
+
 import com.eventbooking.dto.ReportDTO;
-import java.time.LocalDate;
 
 public interface ReportService {
-    ReportDTO generateRevenueReport(LocalDate startDate, LocalDate endDate);
-    ReportDTO generateTicketReport(LocalDate startDate, LocalDate endDate);
-    ReportDTO generatePopularEventsReport(LocalDate startDate, LocalDate endDate);
+    ReportDTO getRevenueReport(LocalDateTime startDate, LocalDateTime endDate);
+    ReportDTO getTicketTypeReport(LocalDateTime startDate, LocalDateTime endDate);
+    ReportDTO getTicketTypeRevenueReport(LocalDateTime startDate, LocalDateTime endDate);
+    ReportDTO getSummaryReport(LocalDateTime startDate, LocalDateTime endDate);
+    ReportDTO getUserActivityReport(LocalDateTime startDate, LocalDateTime endDate);
+    ReportDTO getUserTicketHistoryReport(LocalDateTime startDate, LocalDateTime endDate);
+    ReportDTO getUserEventHistoryReport(LocalDateTime startDate, LocalDateTime endDate);
 } 

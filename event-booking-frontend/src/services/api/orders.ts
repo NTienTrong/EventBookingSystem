@@ -1,6 +1,5 @@
 import { Order, OrderFilter } from '@/types/order';
-import { api } from './api';
-
+import api from './api';
 export const ordersApi = {
   // Lấy danh sách đơn hàng
   getOrders: async (filter?: OrderFilter) => {

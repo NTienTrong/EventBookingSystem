@@ -1,41 +1,44 @@
 export interface TicketType {
-  id: number;
+  id?: number;
   name: string;
   description: string;
-  price: number;
+  price?: number;
   quantity: number;
+  availableQuantity?: number;
   eventId: number;
-  createdAt: string;
-  updatedAt: string;
+  active?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  saleStartDate?: string;
+  saleEndDate?: string;
 }
 
 export interface TicketFilter {
   search?: string;
-  eventId?: string;
-  minPrice?: number;
+  eventId?: number;
   maxPrice?: number;
   page?: number;
   limit?: number;
+  status?: 'ACTIVE' | 'USED' | 'CANCELLED';
 }
 
 export interface Ticket {
-  id: number;
+  id?: number;
   ticketCode: string;
-  qrCode: string;
+  qrCode?: string;
   status: 'ACTIVE' | 'USED' | 'CANCELLED';
-  issuedAt: string;
+  issuedAt?: string;
   usedAt?: string;
-  orderItemId: number;
-  event?: {
-    id: number;
-    name: string;
-    startTime: string;
-    endTime: string;
-    location: string;
-  };
-  user?: {
-    id: number;
-    fullName: string;
-    email: string;
-  };
+  ticketTypeId?: number;
+  ticketTypeName?: string;
+  ticketTypePrice?: number;
+  orderItemId?: number;
+  eventId?: number;
+  eventName?: string;
+  eventLocation?: string;
+  customerId?: number;
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  bookingId?: number;
 } 

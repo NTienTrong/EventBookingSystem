@@ -6,13 +6,12 @@ import Link from 'next/link';
 import {
   LayoutDashboard,
   Calendar,
-  Ticket,
   ShoppingCart,
   User,
   LogOut,
   Menu,
   ChevronRight,
-} from 'lucide-react';
+} from 'lucide-react'; // 'Ticket' đã được xóa khỏi đây
 import { Button } from '@/components/common';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -28,12 +27,6 @@ const navItems = [
     href: '/customer/events',
     icon: Calendar,
     gradient: 'from-green-500 to-green-600',
-  },
-  {
-    title: 'Vé của tôi',
-    href: '/customer/tickets',
-    icon: Ticket,
-    gradient: 'from-purple-500 to-purple-600',
   },
   {
     title: 'Đơn hàng',
@@ -104,8 +97,8 @@ export default function CustomerLayout({
                     <Link
                       href={item.href}
                       className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 group
-                        ${isActive 
-                          ? 'bg-gradient-to-r ' + item.gradient + ' text-white shadow-lg transform scale-105' 
+                        ${isActive
+                          ? 'bg-gradient-to-r ' + item.gradient + ' text-white shadow-lg transform scale-105'
                           : 'text-gray-300 hover:text-white hover:bg-gray-700'}`}
                     >
                       <div className={`p-2 rounded-lg ${isActive ? 'bg-white/20' : 'bg-gray-700 group-hover:bg-gray-600'}`}>
@@ -164,4 +157,4 @@ export default function CustomerLayout({
       </div>
     </div>
   );
-} 
+}

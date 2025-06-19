@@ -1,11 +1,14 @@
 package com.eventbooking.service;
 
-import com.eventbooking.model.Ticket;
-import com.eventbooking.model.TicketStatus;
-import com.eventbooking.dto.CreateTicketDTO;
 import java.util.List;
 
+import com.eventbooking.dto.CreateTicketDTO;
+import com.eventbooking.dto.TicketDTO;
+import com.eventbooking.entity.Ticket;
+import com.eventbooking.enums.TicketStatus;
+
 public interface TicketService {
+    List<TicketDTO> getAllTickets(String search, Long eventId, TicketStatus status);
     Ticket getTicketById(Long id);
     Ticket getTicketByCode(String ticketCode);
     List<Ticket> getTicketsByOrderId(Long orderId);
@@ -16,5 +19,5 @@ public interface TicketService {
     void validateTicket(String ticketCode);
     long countTicketsByEventIdAndStatus(Long eventId, TicketStatus status);
     Ticket createTicket(CreateTicketDTO createTicketDTO);
-    List<Ticket> getAllTickets();
-} 
+    void deleteTicket(Long id);
+}
