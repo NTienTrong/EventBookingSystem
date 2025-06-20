@@ -33,6 +33,8 @@ import com.eventbooking.repository.TicketRepository;
 import com.eventbooking.repository.TicketTypeRepository;
 import com.eventbooking.repository.UserRepository;
 import com.eventbooking.service.BookingService;
+import com.eventbooking.template.StandardEventBookingProcess;
+import com.eventbooking.template.VipEventBookingProcess;
 
 @Service
 @Transactional
@@ -47,6 +49,8 @@ public class BookingServiceImpl implements BookingService, BookingSubject {
     private final OrderItemRepository orderItemRepository;
     private final UserRepository userRepository;
     private final List<BookingObserver> observers = new java.util.ArrayList<>();
+    private final StandardEventBookingProcess standardBookingProcess;
+    private final VipEventBookingProcess vipBookingProcess;
 
     @Autowired
     public BookingServiceImpl(
@@ -58,7 +62,9 @@ public class BookingServiceImpl implements BookingService, BookingSubject {
             OrderRepository orderRepository,
             OrderItemRepository orderItemRepository,
             UserRepository userRepository,
-            List<BookingObserver> injectedObservers) {
+            List<BookingObserver> injectedObservers,
+            StandardEventBookingProcess standardBookingProcess,
+            VipEventBookingProcess vipBookingProcess) {
         this.bookingRepository = bookingRepository;
         this.eventRepository = eventRepository;
         this.ticketTypeRepository = ticketTypeRepository;
@@ -67,6 +73,8 @@ public class BookingServiceImpl implements BookingService, BookingSubject {
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
         this.userRepository = userRepository;
+        this.standardBookingProcess = standardBookingProcess;
+        this.vipBookingProcess = vipBookingProcess;
         if (injectedObservers != null) {
             this.observers.addAll(injectedObservers);
         }
@@ -185,5 +193,14 @@ public class BookingServiceImpl implements BookingService, BookingSubject {
 
         // Gọi observer sau khi thanh toán
         notifyObservers(booking, "PAYMENT_RECEIVED");
+    }
+
+    // Sử dụng Template Method Pattern cho booking
+    public void processBookingTemplate(BookingRequestDTO request, boolean isVip) {
+        if (isVip) {
+            vipBookingProcess.processBooking(request);
+        } else {
+            standardBookingProcess.processBooking(request);
+        }
     }
 }
