@@ -23,6 +23,8 @@ import com.eventbooking.enums.OrderStatus;
 import com.eventbooking.enums.PaymentStatus;
 import com.eventbooking.exception.ResourceNotFoundException;
 import com.eventbooking.factory.BookingFactory;
+import com.eventbooking.observer.BookingObserver;
+import com.eventbooking.observer.BookingSubject;
 import com.eventbooking.repository.BookingRepository;
 import com.eventbooking.repository.EventRepository;
 import com.eventbooking.repository.OrderItemRepository;
@@ -34,7 +36,7 @@ import com.eventbooking.service.BookingService;
 
 @Service
 @Transactional
-public class BookingServiceImpl implements BookingService {
+public class BookingServiceImpl implements BookingService, BookingSubject {
 
     private final BookingRepository bookingRepository;
     private final EventRepository eventRepository;
@@ -44,6 +46,7 @@ public class BookingServiceImpl implements BookingService {
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
     private final UserRepository userRepository;
+    private final List<BookingObserver> observers = new java.util.ArrayList<>();
 
     @Autowired
     public BookingServiceImpl(
@@ -54,7 +57,8 @@ public class BookingServiceImpl implements BookingService {
             BookingFactory bookingFactory,
             OrderRepository orderRepository,
             OrderItemRepository orderItemRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            List<BookingObserver> injectedObservers) {
         this.bookingRepository = bookingRepository;
         this.eventRepository = eventRepository;
         this.ticketTypeRepository = ticketTypeRepository;
@@ -63,6 +67,26 @@ public class BookingServiceImpl implements BookingService {
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
         this.userRepository = userRepository;
+        if (injectedObservers != null) {
+            this.observers.addAll(injectedObservers);
+        }
+    }
+
+    @Override
+    public void registerObserver(BookingObserver observer) {
+        observers.add(observer);
+    }
+
+    @Override
+    public void removeObserver(BookingObserver observer) {
+        observers.remove(observer);
+    }
+
+    @Override
+    public void notifyObservers(Booking booking, String eventType) {
+        for (BookingObserver observer : observers) {
+            observer.update(booking, eventType);
+        }
     }
 
     @Override
@@ -110,6 +134,8 @@ public class BookingServiceImpl implements BookingService {
             orderItemRepository.save(item);
         }
 
+        // Gọi observer sau khi tạo booking
+        notifyObservers(savedBooking, "BOOKING_CREATED");
         return bookingFactory.createBookingDTO(savedBooking);
     }
 
@@ -156,98 +182,8 @@ public class BookingServiceImpl implements BookingService {
             order.setUpdatedAt(LocalDateTime.now());
             orderRepository.save(order);
         }
+
+        // Gọi observer sau khi thanh toán
+        notifyObservers(booking, "PAYMENT_RECEIVED");
     }
-
-    // @Override
-    // public BookingDTO updateBooking(Long id, BookingDTO bookingDTO) {
-    //     // TODO: Implement
-    //     return null;
-    // }
-
-    // @Override
-    // public void cancelBooking(Long id) {
-    //     // TODO: Implement
-    // }
-
-    // @Override
-    // public List<BookingDTO> getBookingsByUserId(Long userId) {
-    // public void processPayment(Long id, String paymentMethod, String transactionId) {
-    //     // TODO: Implement
-    // }
-
-    // @Override
-    // public BookingDTO getBookingById(Long id) {
-    //     Booking booking = bookingRepository.findById(id)
-    //             .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
-    //     List<Ticket> tickets = ticketRepository.findByBookingId(id);
-    //     return convertToBookingDTO(booking, tickets);
-    // }
-
-    // @Override
-    // public List<BookingDTO> getBookingsByUserId(Long userId) {
-    //     // TODO: Implement
-    //     return null;
-    // }
-
-    // @Override
-    // public List<BookingDTO> getBookingsByEventId(Long eventId) {
-    //     // TODO: Implement
-    //     return null;
-    // }
-
-    // @Override
-    // public List<BookingDTO> getAllBookings() {
-    //     // TODO: Implement
-    //     return null;
-    // }
-
-    // private BookingDTO convertToBookingDTO(Booking booking, List<Ticket> tickets) {
-    //     BookingDTO dto = new BookingDTO();
-    //     dto.setId(booking.getId());
-    //     dto.setEventId(booking.getEvent().getId());
-    //     dto.setUserId(booking.getUser().getId());
-    //     dto.setNumberOfTickets(booking.getNumberOfTickets());
-    //     dto.setTotalAmount(booking.getTotalAmount());
-    //     dto.setBookingTime(booking.getBookingTime());
-    //     dto.setStatus(booking.getStatus());
-    //     dto.setPaymentStatus(booking.getPaymentStatus());
-    //     dto.setPaymentMethod(booking.getPaymentMethod());
-    //     dto.setTransactionId(booking.getTransactionId());
-    //     return dto;
-    // }
-
-    // private String generateOrderNumber() {
-    //     return "ORD-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-    // }
-
-    // private String generateTicketCode() {
-    //     return "TKT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-    // }
-
-    // private String generateQRCode() {
-    //     return "QR-" + UUID.randomUUID().toString();
-    // }
-
-    // private BookingResponseDTO convertToResponseDTO(Booking booking, List<Ticket> tickets) {
-    //     BookingResponseDTO response = new BookingResponseDTO();
-    //     response.setOrderId(booking.getId());
-    //     response.setOrderNumber(booking.getOrderNumber());
-    //     response.setTotalAmount(booking.getTotalAmount());
-    //     response.setStatus(booking.getStatus());
-
-    //     List<BookingResponseDTO.TicketDTO> ticketDTOs = new ArrayList<>();
-    //     for (Ticket ticket : tickets) {
-    //         BookingResponseDTO.TicketDTO ticketDTO = new BookingResponseDTO.TicketDTO();
-    //         ticketDTO.setId(ticket.getId());
-    //         ticketDTO.setTicketCode(ticket.getTicketCode());
-    //         ticketDTO.setQrCode(ticket.getQrCode());
-    //         ticketDTO.setStatus(ticket.getStatus());
-    //         ticketDTO.setTicketTypeName(ticket.getTicketType().getName());
-    //         ticketDTO.setPrice(ticket.getPrice());
-    //         ticketDTOs.add(ticketDTO);
-    //     }
-    //     response.setTickets(ticketDTOs);
-
-    //     return response;
-    // }
 }

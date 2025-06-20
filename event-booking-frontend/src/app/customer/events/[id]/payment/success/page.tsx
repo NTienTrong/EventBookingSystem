@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   CheckCircle,
-  Download,
   ArrowRight,
 } from 'lucide-react';
 import { Button } from '@/components/common';
@@ -24,14 +23,6 @@ export default function PaymentSuccessPage({ params }: { params: { id: string } 
     try {
       const parsedOrder = JSON.parse(storedOrder);
       setOrderData(parsedOrder);
-
-      // Auto redirect after 10 seconds
-      // const timer = setTimeout(() => {
-      //   localStorage.removeItem('currentOrder');
-      //   router.push('/customer/orders');
-      // }, 10000);
-
-      // return () => clearTimeout(timer);
     } catch (error) {
       console.error('Error parsing order data:', error);
       router.push(`/customer/events/${params.id}/booking`);
@@ -136,10 +127,6 @@ export default function PaymentSuccessPage({ params }: { params: { id: string } 
             <ArrowRight className="h-4 w-4" />
           </Button>
         </div>
-
-        <p className="text-sm text-gray-500 mt-8">
-          Bạn sẽ được chuyển hướng đến trang đơn hàng sau 10 giây...
-        </p>
       </div>
     </div>
   );
