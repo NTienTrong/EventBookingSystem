@@ -10,7 +10,7 @@ public class PVPaymentStrategy implements PaymentStrategy {
     @Override
     public void pay(Long bookingId, BigDecimal amount) {
         // Logic thanh toán qua PVcomBank
-        System.out.println("Thanh toán qua PVcomBank cho booking " + bookingId + ", số tiền: " + amount);
+        System.out.println("Thanh toán qua PVConnect cho booking " + bookingId + ", số tiền: " + amount);
         // TODO: Tích hợp API PVcomBank thực tế ở đây
     }
 
